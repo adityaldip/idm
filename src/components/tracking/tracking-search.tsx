@@ -25,7 +25,7 @@ export function TrackingSearch() {
       <CardContent className="p-8">
         <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row">
           <Input
-            placeholder="Enter tracking number (e.g. IDM2026000001)"
+            placeholder="Enter tracking number"
             value={trackingNumber}
             onChange={(e) => setTrackingNumber(e.target.value)}
             className="h-12 font-mono text-base"
@@ -40,16 +40,6 @@ export function TrackingSearch() {
             Track
           </Button>
         </form>
-        <p className="mt-4 text-center text-sm text-muted-foreground">
-          Try demo tracking number:{" "}
-          <button
-            type="button"
-            onClick={() => setTrackingNumber("IDM2026000001")}
-            className="font-mono font-medium text-primary hover:underline"
-          >
-            IDM2026000001
-          </button>
-        </p>
       </CardContent>
     </Card>
   );
