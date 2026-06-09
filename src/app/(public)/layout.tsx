@@ -1,6 +1,8 @@
 import { PublicFooter } from "@/components/layout/public-footer";
 import { PublicHeader } from "@/components/layout/public-header";
 
+export const dynamic = "force-dynamic";
+
 export default function PublicLayout({
   children,
 }: {
