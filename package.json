@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "node scripts/build.mjs",
+    "package:next": "node scripts/build.mjs && node scripts/package-next-build.mjs",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",

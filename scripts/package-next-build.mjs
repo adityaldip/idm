@@ -1,4 +1,4 @@
-import { execSync } from "node:child_process";
+import { execSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -8,6 +8,7 @@ const outZip = path.join(root, "next-build.zip");
 
 const includes = [
   "BUILD_ID",
+  "DEPLOY_MANIFEST.json",
   "server",
   "static",
   "app-path-routes-manifest.json",
@@ -29,6 +30,14 @@ if (!fs.existsSync(path.join(nextDir, "BUILD_ID"))) {
   console.error("Missing .next/BUILD_ID — run `pnpm run build` first.");
   process.exit(1);
 }
+
+console.log("Verifying cPanel compatibility...\n");
+const verify = spawnSync("node", ["scripts/verify-cpanel-build.mjs"], {
+  cwd: root,
+  stdio: "inherit",
+});
+if (verify.status !== 0) process.exit(verify.status ?? 1);
+console.log("");
 
 const buildId = fs.readFileSync(path.join(nextDir, "BUILD_ID"), "utf8").trim();
 const staticChunks = fs

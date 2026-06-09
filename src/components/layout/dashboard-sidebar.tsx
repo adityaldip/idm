@@ -20,6 +20,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Logo } from "@/components/shared/logo";
+import { SignOutButton } from "@/components/layout/sign-out-button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DASHBOARD_NAV_GROUPS, type DashboardNavIcon } from "@/lib/constants";
 import { canAccessRoute } from "@/lib/permissions";
@@ -100,7 +101,8 @@ export function DashboardSidebar() {
         </nav>
       </ScrollArea>
 
-      <div className="border-t border-sidebar-border p-4">
+      <div className="space-y-3 border-t border-sidebar-border p-4">
+        <SignOutButton className="w-full justify-start" variant="outline" />
         <p className="text-xs text-muted-foreground">IDM Admin v0.1</p>
       </div>
     </aside>

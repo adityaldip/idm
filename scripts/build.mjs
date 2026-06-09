@@ -1,5 +1,20 @@
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
+import path from "node:path";
+
+const home = process.env.HOME ?? "";
+const isLikelyCpanel =
+  home.startsWith("/home/") && existsSync(path.join(home, "nodevenv"));
+
+if (isLikelyCpanel && process.env.ALLOW_SERVER_BUILD !== "1") {
+  console.error(
+    "\nBlocked: do not run `npm run build` on cPanel.\n" +
+      "It creates a different .next than your Mac zip and causes chunk 500 errors.\n" +
+      "Upload next-build.zip instead, then:\n" +
+      "  rm -rf .next && unzip -o next-build.zip && touch tmp/restart.txt\n",
+  );
+  process.exit(1);
+}
 
 const envFiles = [".env", ".env.local", ".env.production"];
 const backups = [];
