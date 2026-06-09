@@ -37,15 +37,23 @@ if [ -z "$REQUIRED_CHUNK" ]; then
 fi
 echo "5530 chunk on disk: $(basename "$REQUIRED_CHUNK")"
 
-node scripts/check-server-deploy.mjs || {
-  echo ""
-  echo "Deploy verification failed. Do NOT run npm run build on the server."
-  exit 1
-}
+node scripts/verify-extracted-build.mjs
 
-echo "=== Restarting Passenger ==="
+echo "=== Restarting Passenger (must happen before live checks) ==="
 mkdir -p tmp
 touch tmp/restart.txt
+pkill -9 -u "$(whoami)" node 2>/dev/null || true
+sleep 5
 
-echo ""
-echo "Done. Open https://ptintandayamandiri.co.id and hard-refresh (Cmd+Shift+R)."
+echo "=== Verifying live site ==="
+if node scripts/check-server-deploy.mjs; then
+  echo ""
+  echo "Done. Open https://ptintandayamandiri.co.id and hard-refresh (Cmd+Shift+R)."
+else
+  echo ""
+  echo "WARNING: Live site check failed, but files on disk look correct."
+  echo "Wait 30s and run: node scripts/check-server-deploy.mjs"
+  echo "Expected BUILD_ID: $(cat .next/BUILD_ID)"
+  echo "Expected 5530: $(basename "$REQUIRED_CHUNK")"
+  exit 1
+fi
