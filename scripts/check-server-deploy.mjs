@@ -36,13 +36,15 @@ for (const stale of manifest.staleChunks ?? []) {
   }
 }
 
-for (const marker of manifest.markerChunks ?? []) {
-  const file = path.join(nextDir, marker);
+const chunksToVerify = manifest.requiredChunks ?? manifest.markerChunks ?? [];
+
+for (const chunk of chunksToVerify) {
+  const file = path.join(nextDir, chunk);
   if (!fs.existsSync(file)) {
-    fail(`Missing required chunk: .next/${marker}\nYour .next folder is incomplete or mixed.`);
+    fail(`Missing required chunk: .next/${chunk}\nYour .next folder is incomplete or mixed.`);
   }
 }
-ok("Marker chunks exist, stale chunks absent");
+ok(`${chunksToVerify.length} required chunks exist, stale chunks absent`);
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://ptintandayamandiri.co.id";
 
@@ -63,11 +65,11 @@ for (const stale of manifest.staleChunks ?? []) {
   }
 }
 
-for (const marker of manifest.markerChunks ?? []) {
-  const markerName = marker.split("/").pop();
-  if (!home.body.includes(markerName)) {
+for (const chunk of chunksToVerify) {
+  const chunkName = chunk.split("/").pop();
+  if (!home.body.includes(chunkName)) {
     fail(
-      `Live HTML does not reference expected chunk ${markerName}.\n` +
+      `Live HTML does not reference expected chunk ${chunkName}.\n` +
         "The running app is not using the uploaded build.",
     );
   }

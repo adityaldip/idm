@@ -118,10 +118,15 @@ try {
 
   ok(`All ${chunks.length} homepage chunks exist on disk and return 200`);
 
-  const markerChunks = chunks
-    .map((chunk) => chunk.replace("_next/", ""))
-    .filter((chunk) => !chunk.includes("webpack") && !chunk.includes("polyfills"))
-    .slice(0, 6);
+  const requiredChunks = [
+    ...new Set(
+      chunks
+        .map((chunk) => chunk.replace("_next/", ""))
+        .filter((chunk) => !chunk.includes("webpack") && !chunk.includes("polyfills")),
+    ),
+  ];
+
+  const markerChunks = requiredChunks.slice(0, 8);
 
   fs.writeFileSync(
     path.join(nextDir, "DEPLOY_MANIFEST.json"),
@@ -130,9 +135,11 @@ try {
         buildId,
         createdAt: new Date().toISOString(),
         markerChunks,
+        requiredChunks,
         staleChunks: [
           "static/chunks/2498-2b61d0fa9b66b910.js",
           "static/chunks/app/layout-c2dcbe8ca208cb0a.js",
+          "static/chunks/5530-06a54b28eb37c890.js",
         ],
       },
       null,

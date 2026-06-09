@@ -2,6 +2,7 @@ import { cache } from "react";
 import type { ContentBlockType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
+  BRANCHES,
   COMPANY,
   COMPANY_PROFILE,
   VISION_MISSION,
@@ -13,14 +14,31 @@ import {
   COVERAGE_REGIONS,
 } from "@/lib/company";
 
-export const getSettingsMap = cache(async () => {
-  const rows = await prisma.setting.findMany();
-  return Object.fromEntries(rows.map((r) => [r.key, r.value]));
-});
+function logDbFallback(label: string, error: unknown) {
+  console.error(`[public-site] ${label} failed, using static fallback:`, error);
+}
 
-export const getContentBlock = cache(async (type: ContentBlockType) => {
-  return prisma.contentBlock.findUnique({ where: { type } });
-});
+async function withDbFallback<T>(label: string, fallback: T, fn: () => Promise<T>) {
+  try {
+    return await fn();
+  } catch (error) {
+    logDbFallback(label, error);
+    return fallback;
+  }
+}
+
+export const getSettingsMap = cache(async () =>
+  withDbFallback("getSettingsMap", {}, async () => {
+    const rows = await prisma.setting.findMany();
+    return Object.fromEntries(rows.map((r) => [r.key, r.value]));
+  }),
+);
+
+export const getContentBlock = cache(async (type: ContentBlockType) =>
+  withDbFallback(`getContentBlock(${type})`, null, () =>
+    prisma.contentBlock.findUnique({ where: { type } }),
+  ),
+);
 
 export const getPublicBranding = cache(async () => {
   const settings = await getSettingsMap();
@@ -39,112 +57,141 @@ export const getPublicBranding = cache(async () => {
   };
 });
 
-export const getPublicOfferings = cache(async () => {
-  const items = await prisma.serviceOffering.findMany({
-    where: { isActive: true },
-    orderBy: { sortOrder: "asc" },
-  });
-  if (items.length === 0) {
-    return SERVICES.map((s) => ({
-      id: s.slug,
-      slug: s.slug,
-      name: s.name,
-      description: s.description,
-      icon: s.icon,
-      features: [...s.features],
-    }));
-  }
-  return items.map((o) => ({
-    id: o.id,
-    slug: o.slug,
-    name: o.name,
-    description: o.description,
-    icon: o.icon ?? "Truck",
-    features: o.features,
+const staticOfferings = () =>
+  SERVICES.map((s) => ({
+    id: s.slug,
+    slug: s.slug,
+    name: s.name,
+    description: s.description,
+    icon: s.icon,
+    features: [...s.features],
   }));
-});
 
-export const getPublicPartners = cache(async () => {
-  const items = await prisma.partner.findMany({
-    where: { isActive: true },
-    orderBy: { sortOrder: "asc" },
-  });
-  if (items.length === 0) {
-    return PARTNERS.map((p) => ({
-      id: p.name,
-      name: p.name,
-      logoUrl: p.logo,
-      website: null as string | null,
-    }));
-  }
-  return items.map((p) => ({
-    id: p.id,
+const staticPartners = () =>
+  PARTNERS.map((p) => ({
+    id: p.name,
     name: p.name,
-    logoUrl: p.logoUrl,
-    website: p.website,
+    logoUrl: p.logo,
+    website: null as string | null,
   }));
-});
 
-export const getPublicTestimonials = cache(async () => {
-  return prisma.testimonial.findMany({
-    where: { isActive: true },
-    orderBy: { sortOrder: "asc" },
-    take: 12,
-  });
-});
-
-export const getPublicBranches = cache(async () => {
-  const items = await prisma.branch.findMany({
-    where: { isActive: true },
-    orderBy: [{ isHeadquarters: "desc" }, { name: "asc" }],
-  });
-  if (items.length === 0) {
-    return [];
-  }
-  return items.map((b) => ({
-    id: b.id,
+const staticBranches = () =>
+  BRANCHES.map((b) => ({
+    id: b.name,
     name: b.name,
-    address: [b.address, b.city, b.province, b.postalCode]
-      .filter(Boolean)
-      .join(", "),
-    phone: b.phone ?? "",
+    address: b.address,
+    phone: b.phone,
     isHeadquarters: b.isHeadquarters,
   }));
-});
 
-export const getPublicCoverage = cache(async () => {
-  const areas = await prisma.coverageArea.findMany({
-    orderBy: { province: "asc" },
-  });
-  if (areas.length === 0) {
-    return [...COVERAGE_REGIONS];
-  }
-  return areas.flatMap((a) => a.cities.length > 0 ? a.cities : [a.province]);
-});
+export const getPublicOfferings = cache(async () =>
+  withDbFallback("getPublicOfferings", staticOfferings(), async () => {
+    const items = await prisma.serviceOffering.findMany({
+      where: { isActive: true },
+      orderBy: { sortOrder: "asc" },
+    });
+    if (items.length === 0) {
+      return staticOfferings();
+    }
+    return items.map((o) => ({
+      id: o.id,
+      slug: o.slug,
+      name: o.name,
+      description: o.description,
+      icon: o.icon ?? "Truck",
+      features: o.features,
+    }));
+  }),
+);
 
-export const getPublishedNews = cache(async (limit = 20) => {
-  return prisma.news.findMany({
-    where: { status: "PUBLISHED" },
-    orderBy: { publishedAt: "desc" },
-    take: limit,
-    select: {
-      id: true,
-      slug: true,
-      title: true,
-      excerpt: true,
-      coverImage: true,
-      publishedAt: true,
-      author: { select: { name: true } },
-    },
-  });
-});
+export const getPublicPartners = cache(async () =>
+  withDbFallback("getPublicPartners", staticPartners(), async () => {
+    const items = await prisma.partner.findMany({
+      where: { isActive: true },
+      orderBy: { sortOrder: "asc" },
+    });
+    if (items.length === 0) {
+      return staticPartners();
+    }
+    return items.map((p) => ({
+      id: p.id,
+      name: p.name,
+      logoUrl: p.logoUrl,
+      website: p.website,
+    }));
+  }),
+);
 
-export const getPublishedNewsBySlug = cache(async (slug: string) => {
-  return prisma.news.findFirst({
-    where: { slug, status: "PUBLISHED" },
-    include: { author: { select: { name: true } } },
-  });
-});
+export const getPublicTestimonials = cache(async () =>
+  withDbFallback("getPublicTestimonials", [], () =>
+    prisma.testimonial.findMany({
+      where: { isActive: true },
+      orderBy: { sortOrder: "asc" },
+      take: 12,
+    }),
+  ),
+);
+
+export const getPublicBranches = cache(async () =>
+  withDbFallback("getPublicBranches", staticBranches(), async () => {
+    const items = await prisma.branch.findMany({
+      where: { isActive: true },
+      orderBy: [{ isHeadquarters: "desc" }, { name: "asc" }],
+    });
+    if (items.length === 0) {
+      return staticBranches();
+    }
+    return items.map((b) => ({
+      id: b.id,
+      name: b.name,
+      address: [b.address, b.city, b.province, b.postalCode]
+        .filter(Boolean)
+        .join(", "),
+      phone: b.phone ?? "",
+      isHeadquarters: b.isHeadquarters,
+    }));
+  }),
+);
+
+export const getPublicCoverage = cache(async () =>
+  withDbFallback("getPublicCoverage", [...COVERAGE_REGIONS], async () => {
+    const areas = await prisma.coverageArea.findMany({
+      orderBy: { province: "asc" },
+    });
+    if (areas.length === 0) {
+      return [...COVERAGE_REGIONS];
+    }
+    return areas.flatMap((a) => (a.cities.length > 0 ? a.cities : [a.province]));
+  }),
+);
+
+export const getPublishedNews = cache(async (limit = 20) =>
+  withDbFallback("getPublishedNews", [], () =>
+    prisma.news.findMany({
+      where: { status: "PUBLISHED" },
+      orderBy: { publishedAt: "desc" },
+      take: limit,
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        excerpt: true,
+        coverImage: true,
+        publishedAt: true,
+        author: { select: { name: true } },
+      },
+    }),
+  ),
+);
+
+export const getPublishedNewsBySlug = cache(async (slug: string) =>
+  withDbFallback(`getPublishedNewsBySlug(${slug})`, null, () =>
+    prisma.news.findFirst({
+      where: { slug, status: "PUBLISHED" },
+      include: { author: { select: { name: true } } },
+    }),
+  ),
+);
 
 export const getPublicHomeContent = cache(async () => {
   const [branding, hero, cta, coverage, offerings, partners, testimonials] =
