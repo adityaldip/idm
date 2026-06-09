@@ -14,7 +14,7 @@
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "db:admin": "docker compose up -d postgres adminer",
-    "postinstall": "prisma generate"
+    "postinstall": "node scripts/postinstall.mjs"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
