@@ -72,8 +72,10 @@ docker exec -it idm-postgres psql -U idm -d idm
 
 | Role | Email | Password |
 |------|-------|----------|
-| Super Admin | admin@idm.co.id | Admin123! |
-| Operator | operator@idm.co.id | Operator123! |
+| Super Admin | admin@ptintandayamandiri.co.id | Admin123! |
+| Admin | manager@ptintandayamandiri.co.id | Admin123! |
+| Operator | operator@ptintandayamandiri.co.id | Operator123! |
+| Customer Service | cs@ptintandayamandiri.co.id | Admin123! |
 
 **Demo tracking:** `IDM2026000001`
 

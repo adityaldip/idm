@@ -52,10 +52,10 @@ async function main() {
   });
 
   const superAdmin = await prisma.user.upsert({
-    where: { email: "admin@idm.co.id" },
+    where: { email: "admin@ptintandayamandiri.co.id" },
     update: {},
     create: {
-      email: "admin@idm.co.id",
+      email: "admin@ptintandayamandiri.co.id",
       passwordHash,
       name: "Super Admin",
       role: Role.SUPER_ADMIN,
@@ -64,10 +64,10 @@ async function main() {
   });
 
   await prisma.user.upsert({
-    where: { email: "operator@idm.co.id" },
+    where: { email: "operator@ptintandayamandiri.co.id" },
     update: {},
     create: {
-      email: "operator@idm.co.id",
+      email: "operator@ptintandayamandiri.co.id",
       passwordHash: await bcrypt.hash("Operator123!", 12),
       name: "Warehouse Operator",
       role: Role.OPERATOR,
@@ -76,10 +76,10 @@ async function main() {
   });
 
   await prisma.user.upsert({
-    where: { email: "manager@idm.co.id" },
+    where: { email: "manager@ptintandayamandiri.co.id" },
     update: {},
     create: {
-      email: "manager@idm.co.id",
+      email: "manager@ptintandayamandiri.co.id",
       passwordHash: await bcrypt.hash("Admin123!", 12),
       name: "Operations Manager",
       role: Role.ADMIN,
@@ -88,10 +88,10 @@ async function main() {
   });
 
   await prisma.user.upsert({
-    where: { email: "cs@idm.co.id" },
+    where: { email: "cs@ptintandayamandiri.co.id" },
     update: {},
     create: {
-      email: "cs@idm.co.id",
+      email: "cs@ptintandayamandiri.co.id",
       passwordHash: await bcrypt.hash("Admin123!", 12),
       name: "Customer Service",
       role: Role.CUSTOMER_SERVICE,
@@ -426,10 +426,10 @@ async function main() {
   }
 
   console.log("✅ Seed completed!");
-  console.log("   Super Admin: admin@idm.co.id / Admin123!");
-  console.log("   Admin:       manager@idm.co.id / Admin123!");
-  console.log("   Operator:    operator@idm.co.id / Operator123!");
-  console.log("   CS:          cs@idm.co.id / Admin123!");
+  console.log("   Super Admin: admin@ptintandayamandiri.co.id / Admin123!");
+  console.log("   Admin:       manager@ptintandayamandiri.co.id / Admin123!");
+  console.log("   Operator:    operator@ptintandayamandiri.co.id / Operator123!");
+  console.log("   CS:          cs@ptintandayamandiri.co.id / Admin123!");
   console.log("   Demo tracking: IDM2026000001");
 }
 

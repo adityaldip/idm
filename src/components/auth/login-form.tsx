@@ -47,7 +47,7 @@ export function LoginForm() {
         <Input
           id="email"
           type="email"
-          placeholder="admin@idm.co.id"
+          placeholder="admin@ptintandayamandiri.co.id"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
@@ -86,7 +86,7 @@ export function LoginForm() {
       </Button>
 
       <p className="text-center text-xs text-muted-foreground">
-        Demo: admin@idm.co.id / Admin123!
+        Demo: admin@ptintandayamandiri.co.id / Admin123!
       </p>
     </form>
   );
