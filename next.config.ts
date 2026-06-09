@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Shared hosting (cPanel) has low process limits; avoid EAGAIN during build.
+  experimental: {
+    cpus: 1,
+  },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "**" },
