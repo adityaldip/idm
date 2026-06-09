@@ -15,7 +15,11 @@ export function LoginForm() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState(
+    () => searchParams.get("error") === "CredentialsSignin"
+      ? "Invalid email or password. Please try again."
+      : "",
+  );
   const [isLoading, setIsLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -23,21 +27,35 @@ export function LoginForm() {
     setError("");
     setIsLoading(true);
 
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
+    const normalizedEmail = email.trim().toLowerCase();
 
-    setIsLoading(false);
-
-    if (result?.error) {
-      setError("Invalid email or password. Please try again.");
+    if (!normalizedEmail || password.length < 6) {
+      setError("Please enter a valid email and password (min. 6 characters).");
+      setIsLoading(false);
       return;
     }
 
-    router.push(callbackUrl);
-    router.refresh();
+    try {
+      const result = await signIn("credentials", {
+        email: normalizedEmail,
+        password,
+        redirect: false,
+      });
+
+      // NextAuth returns HTTP 200 with redirect: false even on failure;
+      // failed sign-in is indicated by result.error (e.g. CredentialsSignin).
+      if (!result || result.error) {
+        setError("Invalid email or password. Please try again.");
+        return;
+      }
+
+      router.push(callbackUrl);
+      router.refresh();
+    } catch {
+      setError("Unable to sign in right now. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -47,7 +65,7 @@ export function LoginForm() {
         <Input
           id="email"
           type="email"
-          placeholder="admin@ptintandayamandiri.co.id"
+          placeholder="name@company.co.id"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
@@ -68,11 +86,15 @@ export function LoginForm() {
         />
       </div>
 
-      {error && (
-        <p className="text-sm text-destructive" role="alert">
+      {error ? (
+        <div
+          className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          role="alert"
+          aria-live="polite"
+        >
           {error}
-        </p>
-      )}
+        </div>
+      ) : null}
 
       <Button type="submit" className="w-full" disabled={isLoading}>
         {isLoading ? (
@@ -85,9 +107,6 @@ export function LoginForm() {
         )}
       </Button>
 
-      <p className="text-center text-xs text-muted-foreground">
-        Demo: admin@ptintandayamandiri.co.id / Admin123!
-      </p>
     </form>
   );
 }
