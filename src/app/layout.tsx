@@ -41,7 +41,7 @@ export default function RootLayout({
     <html
       lang="id"
       suppressHydrationWarning
-      className={`${inter.variable} ${plusJakarta.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${inter.variable} ${plusJakarta.variable} ${jetbrainsMono.variable} light h-full antialiased`}
     >
       <body className="min-h-full font-sans">
         <Providers>{children}</Providers>
