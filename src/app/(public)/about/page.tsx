@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { Building2, Eye, Target } from "lucide-react";
 import { PageHero } from "@/components/marketing/page-hero";
+import { ABOUT_WAREHOUSE_IMAGE, PAGE_HERO_IMAGES } from "@/lib/site-media";
 import { Card, CardContent } from "@/components/ui/card";
 import { getPublicAboutContent } from "@/services/public-site.service";
 
@@ -19,6 +21,7 @@ export default async function AboutPage() {
         eyebrow={content.branding.tagline}
         title={content.title}
         description={content.history}
+        image={PAGE_HERO_IMAGES.about}
       />
 
       <div className="mx-auto max-w-7xl px-4 py-16 md:px-6 md:py-20 lg:px-8">
@@ -67,26 +70,44 @@ export default async function AboutPage() {
           </Card>
         </div>
 
-        <Card className="mt-8 overflow-hidden border-border/60 shadow-sm">
-          <div className="h-1.5 bg-gradient-to-r from-primary via-gold to-gold-dark" />
-          <CardContent className="space-y-4 p-8">
-            <h2 className="font-heading text-2xl font-semibold">Siapa Kami</h2>
-            <p className="leading-relaxed text-muted-foreground">
-              {content.short}
+        <div className="mt-8 grid items-stretch gap-8 lg:grid-cols-2">
+          <Card className="overflow-hidden border-border/60 shadow-sm">
+            <div className="h-1.5 bg-gradient-to-r from-primary via-gold to-gold-dark" />
+            <CardContent className="space-y-4 p-8">
+              <h2 className="font-heading text-2xl font-semibold">Siapa Kami</h2>
+              <p className="leading-relaxed text-muted-foreground">
+                {content.short}
+              </p>
+              <p className="leading-relaxed text-muted-foreground">
+                {content.about}
+              </p>
+              <div className="inline-flex flex-wrap gap-3 pt-2">
+                <span className="rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
+                  Berdiri {content.foundedDate}
+                </span>
+                <span className="rounded-full bg-gold/15 px-4 py-1.5 text-sm font-medium text-secondary">
+                  Rebranding {content.rebrandYear}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="relative min-h-64 overflow-hidden rounded-xl shadow-sm ring-1 ring-border/60">
+            <Image
+              src={ABOUT_WAREHOUSE_IMAGE}
+              alt="Operasional gudang PT Intan Daya Mandiri"
+              fill
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              className="object-cover"
+              unoptimized
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+            <p className="absolute inset-x-0 bottom-0 p-6 text-sm leading-relaxed text-white">
+              Penanganan barang yang tertata — dari penerimaan di gudang sampai
+              siap dikirim ke tujuan.
             </p>
-            <p className="leading-relaxed text-muted-foreground">
-              {content.about}
-            </p>
-            <div className="inline-flex flex-wrap gap-3 pt-2">
-              <span className="rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
-                Berdiri {content.foundedDate}
-              </span>
-              <span className="rounded-full bg-gold/15 px-4 py-1.5 text-sm font-medium text-secondary">
-                Rebranding {content.rebrandYear}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </>
   );

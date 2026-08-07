@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { format } from "date-fns";
 import { ArrowLeft } from "lucide-react";
@@ -49,6 +50,18 @@ export default async function NewsArticlePage({ params }: NewsArticlePageProps) 
           <p className="mt-4 text-lg text-muted-foreground">{article.excerpt}</p>
         )}
       </header>
+      {article.coverImage && (
+        <Image
+          src={article.coverImage}
+          alt={article.title}
+          width={1200}
+          height={675}
+          sizes="(max-width: 768px) 100vw, 768px"
+          className="mt-8 aspect-16/9 w-full rounded-2xl object-cover shadow-md ring-1 ring-border/60"
+          unoptimized
+          priority
+        />
+      )}
       <div className="prose prose-neutral mt-8 max-w-none dark:prose-invert">
         {article.content.split("\n").map((para, i) =>
           para.trim() ? (

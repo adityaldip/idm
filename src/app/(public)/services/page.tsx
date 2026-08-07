@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
-import { Plane, Ship, Truck } from "lucide-react";
+import Image from "next/image";
+import { Container, Package, Plane, Ship, Truck, Zap } from "lucide-react";
 import { PageHero } from "@/components/marketing/page-hero";
+import { PAGE_HERO_IMAGES, getServiceImage } from "@/lib/site-media";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   getPublicOfferings,
@@ -14,7 +16,14 @@ export const metadata: Metadata = {
     "Layanan PT Intan Daya Mandiri — Ocean Freight, Domestic Distribution, Project Cargo, dan Air Freight.",
 };
 
-const iconMap = { Truck, Ship, Plane, Container: Truck } as const;
+const iconMap = {
+  Truck,
+  Ship,
+  Plane,
+  Zap,
+  Package,
+  Container,
+} as const;
 
 export default async function ServicesPage() {
   const [offerings, coverage, intro] = await Promise.all([
@@ -32,6 +41,7 @@ export default async function ServicesPage() {
           intro?.subtitle ??
           "Solusi logistik cepat dan andal — pengiriman cepat, aman, dan terpercaya dengan tarif ekspedisi yang kompetitif."
         }
+        image={PAGE_HERO_IMAGES.services}
       />
 
       <div className="mx-auto max-w-7xl px-4 py-16 md:px-6 md:py-20 lg:px-8">
@@ -39,14 +49,29 @@ export default async function ServicesPage() {
           {offerings.map((service) => {
             const Icon =
               iconMap[service.icon as keyof typeof iconMap] ?? Truck;
+            const photo = getServiceImage(service.slug, service.icon);
             return (
               <Card
                 key={service.slug}
-                className="card-hover overflow-hidden border-border/60"
+                className="card-hover group overflow-hidden border-border/60 py-0"
               >
-                <div className="h-1 bg-gradient-to-r from-primary/80 to-gold/80" />
+                {photo ? (
+                  <div className="relative aspect-16/9 overflow-hidden">
+                    <Image
+                      src={photo}
+                      alt={service.name}
+                      fill
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      unoptimized
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent" />
+                  </div>
+                ) : (
+                  <div className="h-1 bg-gradient-to-r from-primary/80 to-gold/80" />
+                )}
                 <CardContent className="p-8">
-                  <div className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/15 to-gold/15 text-primary">
+                  <div className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/15 to-gold/15 text-primary ring-1 ring-primary/10">
                     <Icon className="size-7" />
                   </div>
                   <h2 className="mt-5 font-heading text-xl font-semibold">

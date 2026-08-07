@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Clock, Mail, MapPin, Phone } from "lucide-react";
 import { ContactForm } from "@/components/marketing/contact-form";
 import { PageHero } from "@/components/marketing/page-hero";
+import { PAGE_HERO_IMAGES } from "@/lib/site-media";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   getPublicBranding,
@@ -37,6 +38,7 @@ export default async function ContactPage() {
         eyebrow="Hubungi Kami"
         title="Kontak Kami"
         description="Butuh bantuan? Kirim pesan melalui formulir di bawah atau hubungi kantor kami langsung."
+        image={PAGE_HERO_IMAGES.contact}
       />
 
       <div className="mx-auto max-w-7xl px-4 py-16 md:px-6 md:py-20 lg:px-8">

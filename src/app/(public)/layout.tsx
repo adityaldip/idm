@@ -10,6 +10,10 @@ export default function PublicLayout({
 }) {
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      {/* Scroll-reveal sections start hidden — keep them readable without JS. */}
+      <noscript>
+        <style>{`[data-reveal]{opacity:1!important;transform:none!important}`}</style>
+      </noscript>
       <PublicHeader />
       <main className="flex-1">{children}</main>
       <PublicFooter />

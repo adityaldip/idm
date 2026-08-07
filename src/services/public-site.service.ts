@@ -9,6 +9,7 @@ import {
   SERVICES,
   PARTNERS,
   OFFERINGS,
+  PROCESS_STEPS,
   WHY_CHOOSE_US,
   COMPANY_STATS,
   COVERAGE_REGIONS,
@@ -194,16 +195,25 @@ export const getPublishedNewsBySlug = cache(async (slug: string) =>
 );
 
 export const getPublicHomeContent = cache(async () => {
-  const [branding, hero, cta, coverage, offerings, partners, testimonials] =
-    await Promise.all([
-      getPublicBranding(),
-      getContentBlock("HERO"),
-      getContentBlock("CTA"),
-      getContentBlock("COVERAGE"),
-      getPublicOfferings(),
-      getPublicPartners(),
-      getPublicTestimonials(),
-    ]);
+  const [
+    branding,
+    hero,
+    cta,
+    coverage,
+    coverageRegions,
+    offerings,
+    partners,
+    testimonials,
+  ] = await Promise.all([
+    getPublicBranding(),
+    getContentBlock("HERO"),
+    getContentBlock("CTA"),
+    getContentBlock("COVERAGE"),
+    getPublicCoverage(),
+    getPublicOfferings(),
+    getPublicPartners(),
+    getPublicTestimonials(),
+  ]);
 
   const offeringsIntro = await getContentBlock("SERVICES_INTRO");
   const metadata = (hero?.metadata ?? {}) as Record<string, unknown>;
@@ -231,6 +241,7 @@ export const getPublicHomeContent = cache(async () => {
       body:
         coverage?.body ??
         "Beroperasi di lebih dari 40 kota di seluruh Indonesia dengan layanan terintegrasi dan kualitas terbaik.",
+      regions: coverageRegions,
     },
     offeringsIntro: {
       title: offeringsIntro?.title ?? "Apa Yang Kami Tawarkan",
@@ -243,6 +254,7 @@ export const getPublicHomeContent = cache(async () => {
     mission: VISION_MISSION.mission,
     stats: COMPANY_STATS,
     whyChooseUs: WHY_CHOOSE_US,
+    processSteps: PROCESS_STEPS,
     offerings,
     partners,
     testimonials,

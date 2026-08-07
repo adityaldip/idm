@@ -70,6 +70,33 @@ export const WHY_CHOOSE_US = [
   "Aman & terpercaya — pelayanan maksimal",
 ] as const;
 
+export const PROCESS_STEPS = [
+  {
+    icon: "ClipboardList",
+    title: "Permintaan & Penawaran",
+    description:
+      "Sampaikan kebutuhan pengiriman Anda. Kami kirimkan penawaran tarif kompetitif di hari yang sama.",
+  },
+  {
+    icon: "PackageCheck",
+    title: "Penjemputan Barang",
+    description:
+      "Tim kami menjemput barang di lokasi Anda, memeriksa kondisi, dan melengkapi dokumen pengiriman.",
+  },
+  {
+    icon: "Route",
+    title: "Pengiriman & Pelacakan",
+    description:
+      "Barang dikirim melalui jalur darat, laut, atau udara — status perjalanan dapat dipantau real-time.",
+  },
+  {
+    icon: "ShieldCheck",
+    title: "Serah Terima",
+    description:
+      "Barang diterima tepat waktu dan bukti serah terima tercatat rapi di sistem kami.",
+  },
+] as const;
+
 export const OFFERINGS = [
   "Transportasi (Trip Base, Fix Variable, Rental Unit, dan lainnya)",
   "Manajemen Barang (Ekspor, Impor, Antar Pulau)",
