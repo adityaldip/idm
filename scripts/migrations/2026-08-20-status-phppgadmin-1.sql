@@ -1,13 +1,13 @@
--- Versi manual: untuk GUI SQL yang hanya menerima satu perintah sekaligus
--- (tanpa BEGIN/COMMIT). Jalankan BAGIAN 1 → 2 → 3 → 4 berurutan.
--- BAGIAN 4 hanya boleh dijalankan kalau BAGIAN 3 mengembalikan 0 dan 0.
+-- BAGIAN 1 dari 2 — untuk phpPgAdmin: SQL > "SQL script file to upload" > Execute
 --
--- Kalau punya akses shell, pakai versi transaksional saja — lebih aman:
---   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f 2026-08-20-configurable-shipment-status.sql
+-- Aman: hanya menambah struktur baru dan menyalin status lama ke kolom baru.
+-- Kolom "status" lama masih utuh setelah file ini, jadi situs versi lama tetap
+-- berjalan normal dan langkah ini masih bisa dibatalkan begitu saja.
+--
+-- Setelah ini, jalankan query pemeriksaan (lihat catatan) sebelum BAGIAN 2.
+-- Tidak memakai BEGIN/COMMIT maupun blok $$ karena parser phpPgAdmin memecah
+-- skrip di setiap titik koma.
 
--- ============================================================
--- BAGIAN 1 — tambah struktur baru (aman, tidak menyentuh data lama)
--- ============================================================
 ALTER TABLE "shipments" ADD COLUMN "poNumber" TEXT;
 
 CREATE TYPE "ItemUnit" AS ENUM ('PCS','BATANG','ROLL','HASPEL','METER','KG','TON','M3','KOLI','PALLET','SET','UNIT','DRUM');
@@ -56,36 +56,6 @@ ALTER TABLE "shipments" ADD COLUMN "statusId" TEXT;
 
 ALTER TABLE "tracking_histories" ADD COLUMN "statusId" TEXT;
 
--- ============================================================
--- BAGIAN 2 — salin status lama ke kolom baru
--- ============================================================
 UPDATE "shipments" s SET "statusId" = d."id" FROM "shipment_status_defs" d WHERE d."code" = s."status"::text;
 
 UPDATE "tracking_histories" t SET "statusId" = d."id" FROM "shipment_status_defs" d WHERE d."code" = t."status"::text;
-
--- ============================================================
--- BAGIAN 3 — CEK. Kedua angka HARUS 0. Kalau bukan 0, STOP.
--- ============================================================
-SELECT (SELECT count(*) FROM "shipments" WHERE "statusId" IS NULL) AS shipment_belum_terisi, (SELECT count(*) FROM "tracking_histories" WHERE "statusId" IS NULL) AS tracking_belum_terisi;
-
--- ============================================================
--- BAGIAN 4 — kunci kolom baru dan buang yang lama
--- (hanya kalau BAGIAN 3 = 0 dan 0)
--- ============================================================
-ALTER TABLE "shipments" ALTER COLUMN "statusId" SET NOT NULL;
-
-ALTER TABLE "tracking_histories" ALTER COLUMN "statusId" SET NOT NULL;
-
-ALTER TABLE "shipments" ADD CONSTRAINT "shipments_statusId_fkey" FOREIGN KEY ("statusId") REFERENCES "shipment_status_defs"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
-ALTER TABLE "tracking_histories" ADD CONSTRAINT "tracking_histories_statusId_fkey" FOREIGN KEY ("statusId") REFERENCES "shipment_status_defs"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
-DROP INDEX "shipments_status_idx";
-
-CREATE INDEX "shipments_statusId_idx" ON "shipments"("statusId");
-
-ALTER TABLE "shipments" DROP COLUMN "status";
-
-ALTER TABLE "tracking_histories" DROP COLUMN "status";
-
-DROP TYPE "ShipmentStatus";
