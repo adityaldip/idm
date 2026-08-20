@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -74,17 +75,21 @@ export function DashboardHeader() {
             )}
           />
           <DropdownMenuContent align="end" className="z-[200] w-56">
-            <DropdownMenuLabel>
-              <div className="flex flex-col gap-0.5">
-                <span className="text-sm font-medium">{session?.user?.name}</span>
-                <span className="text-xs font-normal text-muted-foreground">
-                  {session?.user?.email}
-                </span>
-                <span className="text-xs font-normal capitalize text-muted-foreground">
-                  {session?.user?.role?.toLowerCase().replace("_", " ")}
-                </span>
-              </div>
-            </DropdownMenuLabel>
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-sm font-medium">
+                    {session?.user?.name}
+                  </span>
+                  <span className="text-xs font-normal text-muted-foreground">
+                    {session?.user?.email}
+                  </span>
+                  <span className="text-xs font-normal capitalize text-muted-foreground">
+                    {session?.user?.role?.toLowerCase().replace("_", " ")}
+                  </span>
+                </div>
+              </DropdownMenuLabel>
+            </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               variant="destructive"
