@@ -1,5 +1,4 @@
 import type { Prisma, Role } from "@prisma/client";
-import { ShipmentStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { paginationMeta } from "@/lib/validators/common";
 import type {
@@ -8,9 +7,10 @@ import type {
 } from "@/lib/validators/shipment";
 import type { PaginationInput } from "@/lib/validators/common";
 import { logActivity } from "./activity.service";
+import { getInitialStatus } from "./shipment-status.service";
 
 type ShipmentFilters = PaginationInput & {
-  status?: ShipmentStatus;
+  status?: string;
   branchId?: string;
   customerId?: string;
   dateFrom?: string;
@@ -48,6 +48,7 @@ export async function generateTrackingNumber(): Promise<string> {
 }
 
 const shipmentInclude = {
+  status: true,
   serviceOffering: { select: { id: true, slug: true, name: true } },
   customer: { select: { id: true, code: true, name: true, phone: true } },
   originBranch: { select: { id: true, code: true, name: true, city: true } },
@@ -59,8 +60,12 @@ const shipmentInclude = {
   createdBy: { select: { id: true, name: true } },
   trackingHistory: {
     orderBy: { timestamp: "asc" as const },
-    include: { branch: { select: { id: true, name: true, city: true } } },
+    include: {
+      status: true,
+      branch: { select: { id: true, name: true, city: true } },
+    },
   },
+  items: { orderBy: { sortOrder: "asc" as const } },
 };
 
 export async function listShipments(
@@ -73,7 +78,7 @@ export async function listShipments(
 
   const where: Prisma.ShipmentWhereInput = {
     ...branchScopeWhere(actor.role, actor.branchId),
-    ...(status && { status }),
+    ...(status && { status: { code: status } }),
     ...(customerId && { customerId }),
     ...(branchId && {
       OR: [{ originBranchId: branchId }, { destinationBranchId: branchId }],
@@ -90,6 +95,7 @@ export async function listShipments(
       ? {
           OR: [
             { trackingNumber: { contains: search, mode: "insensitive" } },
+            { poNumber: { contains: search, mode: "insensitive" } },
             { senderName: { contains: search, mode: "insensitive" } },
             { recipientName: { contains: search, mode: "insensitive" } },
             { senderCity: { contains: search, mode: "insensitive" } },
@@ -103,7 +109,7 @@ export async function listShipments(
     sortBy === "trackingNumber"
       ? { trackingNumber: sortOrder }
       : sortBy === "status"
-        ? { status: sortOrder }
+        ? { status: { sortOrder } }
         : { createdAt: sortOrder };
 
   const [items, total] = await Promise.all([
@@ -113,12 +119,14 @@ export async function listShipments(
       take: limit,
       orderBy,
       include: {
+        status: true,
         serviceOffering: { select: { id: true, name: true } },
         customer: { select: { id: true, code: true, name: true } },
         originBranch: { select: { id: true, name: true, city: true } },
         destinationBranch: { select: { id: true, name: true, city: true } },
         vehicle: { select: { id: true, plateNumber: true } },
         driver: { select: { id: true, code: true, name: true } },
+        items: { orderBy: { sortOrder: "asc" } },
       },
     }),
     prisma.shipment.count({ where }),
@@ -160,12 +168,14 @@ export async function createShipment(
   userId: string,
 ) {
   const trackingNumber = await generateTrackingNumber();
+  const initial = await getInitialStatus();
 
   const shipment = await prisma.$transaction(async (tx) => {
     const created = await tx.shipment.create({
       data: {
         trackingNumber,
-        status: ShipmentStatus.CREATED,
+        poNumber: input.poNumber,
+        statusId: initial.id,
         serviceOfferingId: input.serviceOfferingId,
         customerId: input.customerId,
         senderName: input.senderName,
@@ -194,6 +204,14 @@ export async function createShipment(
         notes: input.notes,
         currentLocation: input.senderCity,
         createdById: userId,
+        ...(input.items?.length && {
+          items: {
+            create: input.items.map((item, index) => ({
+              ...item,
+              sortOrder: index,
+            })),
+          },
+        }),
       },
       include: shipmentInclude,
     });
@@ -201,7 +219,7 @@ export async function createShipment(
     await tx.trackingHistory.create({
       data: {
         shipmentId: created.id,
-        status: ShipmentStatus.CREATED,
+        statusId: initial.id,
         location: input.senderCity,
         description: "Shipment created",
         branchId: input.originBranchId,
@@ -239,13 +257,24 @@ export async function updateShipment(
     destinationBranchId,
     vehicleId,
     driverId,
+    items,
+    status,
     ...rest
   } = input;
+
+  const statusId = status
+    ? (await prisma.shipmentStatusDef.findUnique({ where: { code: status } }))
+        ?.id
+    : undefined;
+  if (status && !statusId) {
+    throw new Error(`Unknown shipment status "${status}"`);
+  }
 
   const shipment = await prisma.shipment.update({
     where: { id },
     data: {
       ...rest,
+      ...(statusId && { statusId }),
       ...(originBranchId !== undefined && {
         originBranchId: originBranchId || null,
       }),
@@ -261,6 +290,13 @@ export async function updateShipment(
       }),
       ...(actualDelivery !== undefined && {
         actualDelivery: actualDelivery ? new Date(actualDelivery) : null,
+      }),
+      // The form always posts the full item list, so replacing beats diffing.
+      ...(items !== undefined && {
+        items: {
+          deleteMany: {},
+          create: items.map((item, index) => ({ ...item, sortOrder: index })),
+        },
       }),
     },
     include: shipmentInclude,

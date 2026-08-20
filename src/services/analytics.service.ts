@@ -1,4 +1,3 @@
-import { ShipmentStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { Role } from "@prisma/client";
 import { getRecentActivities } from "./activity.service";
@@ -28,21 +27,20 @@ export async function getDashboardKpis(actor: {
     revenueAgg,
     statusBreakdown,
     recentActivities,
+    statusDefs,
     shipmentsLast7Days,
   ] = await Promise.all([
     prisma.shipment.count({ where: scope }),
     prisma.shipment.count({
       where: {
         ...scope,
-        status: {
-          notIn: [ShipmentStatus.DELIVERED, ShipmentStatus.RETURNED],
-        },
+        status: { isFinal: false },
       },
     }),
     prisma.shipment.count({
       where: {
         ...scope,
-        status: ShipmentStatus.DELIVERED,
+        status: { isFinal: true, allowFromAny: false },
         actualDelivery: { gte: today },
       },
     }),
@@ -52,11 +50,12 @@ export async function getDashboardKpis(actor: {
       _sum: { totalCost: true },
     }),
     prisma.shipment.groupBy({
-      by: ["status"],
+      by: ["statusId"],
       where: scope,
       _count: { id: true },
     }),
     getRecentActivities(8),
+    prisma.shipmentStatusDef.findMany({ orderBy: { sortOrder: "asc" } }),
     prisma.shipment.findMany({
       where: {
         ...scope,
@@ -91,10 +90,15 @@ export async function getDashboardKpis(actor: {
       totalCustomers,
       totalRevenue: Number(revenueAgg._sum.totalCost ?? 0),
     },
-    statusBreakdown: statusBreakdown.map((s) => ({
-      status: s.status,
-      count: s._count.id,
-    })),
+    statusBreakdown: statusBreakdown.map((s) => {
+      const def = statusDefs.find((d) => d.id === s.statusId);
+      return {
+        code: def?.code ?? s.statusId,
+        label: def?.label ?? s.statusId,
+        color: def?.color ?? "slate",
+        count: s._count?.id ?? 0,
+      };
+    }),
     shipmentsChart: chartByDay,
     recentActivities,
   };

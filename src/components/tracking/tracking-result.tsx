@@ -1,38 +1,17 @@
 import { format } from "date-fns";
-import type { ShipmentStatus } from "@prisma/client";
 import { TrackingTimeline } from "@/components/tracking/tracking-timeline";
 import { TrackingSearch } from "@/components/tracking/tracking-search";
 import { Card, CardContent } from "@/components/ui/card";
-import { SHIPMENT_STATUS_LABELS } from "@/lib/constants";
 import type { PublicTrackingData } from "@/types/public-tracking";
+import { statusColorClass } from "@/lib/shipment-status";
 import { cn } from "@/lib/utils";
-
-const statusColors: Record<ShipmentStatus, string> = {
-  CREATED: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
-  PICKED_UP: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
-  IN_WAREHOUSE: "bg-violet-100 text-violet-700 dark:bg-violet-900 dark:text-violet-300",
-  IN_TRANSIT: "bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-300",
-  OUT_FOR_DELIVERY: "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300",
-  DELIVERED: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300",
-  RETURNED: "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300",
-};
-
-const statusProgress: Record<ShipmentStatus, number> = {
-  CREATED: 10,
-  PICKED_UP: 25,
-  IN_WAREHOUSE: 40,
-  IN_TRANSIT: 60,
-  OUT_FOR_DELIVERY: 80,
-  DELIVERED: 100,
-  RETURNED: 100,
-};
 
 interface TrackingResultProps {
   shipment: PublicTrackingData;
+  progress: number;
 }
 
-export function TrackingResult({ shipment }: TrackingResultProps) {
-  const progress = statusProgress[shipment.status];
+export function TrackingResult({ shipment, progress }: TrackingResultProps) {
 
   return (
     <div className="space-y-8">
@@ -47,6 +26,14 @@ export function TrackingResult({ shipment }: TrackingResultProps) {
               <p className="font-mono text-2xl font-bold tracking-wider">
                 {shipment.trackingNumber}
               </p>
+              {shipment.poNumber && (
+                <p className="mt-2 text-sm text-white/70">
+                  No. PO{" "}
+                  <span className="font-mono text-white">
+                    {shipment.poNumber}
+                  </span>
+                </p>
+              )}
             </div>
           </div>
 
@@ -57,10 +44,10 @@ export function TrackingResult({ shipment }: TrackingResultProps) {
                 <span
                   className={cn(
                     "mt-1 inline-flex rounded-full px-3 py-1 text-sm font-medium",
-                    statusColors[shipment.status],
+                    statusColorClass(shipment.status.color),
                   )}
                 >
-                  {SHIPMENT_STATUS_LABELS[shipment.status]}
+                  {shipment.status.label}
                 </span>
               </div>
               {shipment.estimatedDelivery && (

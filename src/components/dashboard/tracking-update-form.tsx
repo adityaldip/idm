@@ -3,10 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { ShipmentStatus } from "@prisma/client";
 import { addTrackingAction } from "@/app/(dashboard)/shipments/actions";
-import { VALID_STATUS_TRANSITIONS } from "@/lib/shipment-status";
-import { SHIPMENT_STATUS_LABELS } from "@/lib/constants";
+import type { StatusOption } from "@/lib/status-option";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,20 +15,20 @@ type BranchOption = { id: string; name: string; city: string };
 
 interface TrackingUpdateFormProps {
   shipmentId: string;
-  currentStatus: ShipmentStatus;
+  currentStatus: StatusOption;
+  nextStatuses: StatusOption[];
   branches: BranchOption[];
 }
 
 export function TrackingUpdateForm({
   shipmentId,
   currentStatus,
+  nextStatuses,
   branches,
 }: TrackingUpdateFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const allowedStatuses = VALID_STATUS_TRANSITIONS[currentStatus] ?? [];
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -53,11 +51,11 @@ export function TrackingUpdateForm({
     router.refresh();
   }
 
-  if (allowedStatuses.length === 0) {
+  if (nextStatuses.length === 0) {
     return (
       <Card>
         <CardContent className="py-8 text-center text-sm text-muted-foreground">
-          This shipment is in a terminal state ({SHIPMENT_STATUS_LABELS[currentStatus]}).
+          This shipment is in a terminal state ({currentStatus.label}).
           No further status updates are allowed.
         </CardContent>
       </Card>
@@ -86,14 +84,14 @@ export function TrackingUpdateForm({
               className="flex h-9 w-full rounded-lg border border-input bg-background px-3 text-sm"
             >
               <option value="">Select status</option>
-              {allowedStatuses.map((status) => (
-                <option key={status} value={status}>
-                  {SHIPMENT_STATUS_LABELS[status]}
+              {nextStatuses.map((status) => (
+                <option key={status.code} value={status.code}>
+                  {status.label}
                 </option>
               ))}
             </select>
             <p className="text-xs text-muted-foreground">
-              Current: {SHIPMENT_STATUS_LABELS[currentStatus]}
+              Current: {currentStatus.label}
             </p>
           </div>
 

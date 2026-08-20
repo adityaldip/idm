@@ -3,6 +3,8 @@ import { PageHeader } from "@/components/dashboard/page-header";
 import { TrackingUpdateForm } from "@/components/dashboard/tracking-update-form";
 import { getSessionActor } from "@/lib/server-session";
 import { getShipmentById } from "@/services/shipment.service";
+import { getShipmentStatuses } from "@/services/shipment-status.service";
+import { allowedNextStatuses } from "@/lib/shipment-status";
 import { prisma } from "@/lib/prisma";
 
 interface TrackingUpdatePageProps {
@@ -17,6 +19,8 @@ export default async function TrackingUpdatePage({
   const shipment = await getShipmentById(id, actor);
 
   if (!shipment) notFound();
+
+  const statuses = await getShipmentStatuses();
 
   const branches = await prisma.branch.findMany({
     where: { isActive: true },
@@ -34,6 +38,7 @@ export default async function TrackingUpdatePage({
       <TrackingUpdateForm
         shipmentId={id}
         currentStatus={shipment.status}
+        nextStatuses={allowedNextStatuses(shipment.statusId, statuses)}
         branches={branches}
       />
     </div>

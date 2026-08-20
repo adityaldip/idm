@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { MapPin, Package, Truck } from "lucide-react";
+import { Boxes, MapPin, Package, Truck } from "lucide-react";
 import { format } from "date-fns";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { StatusBadge } from "@/components/dashboard/status-badge";
@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getSessionActor } from "@/lib/server-session";
 import { hasPermission } from "@/lib/permissions";
 import { getShipmentById } from "@/services/shipment.service";
+import { ITEM_UNIT_LABELS } from "@/lib/constants";
 
 interface ShipmentDetailPageProps {
   params: Promise<{ id: string }>;
@@ -147,6 +148,51 @@ export default async function ShipmentDetailPage({
         </Card>
       </div>
 
+      {shipment.items.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Boxes className="size-4" />
+              Daftar Barang
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-y border-border bg-muted/40 text-left">
+                    <th className="px-6 py-2 font-medium">Nama Barang</th>
+                    <th className="px-6 py-2 text-right font-medium">Qty</th>
+                    <th className="px-6 py-2 font-medium">Satuan</th>
+                    <th className="px-6 py-2 text-right font-medium">
+                      Berat (kg)
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {shipment.items.map((item) => (
+                    <tr key={item.id} className="border-b border-border/50">
+                      <td className="px-6 py-2">{item.name}</td>
+                      <td className="px-6 py-2 text-right">
+                        {Number(item.quantity).toLocaleString("id-ID")}
+                      </td>
+                      <td className="px-6 py-2">
+                        {ITEM_UNIT_LABELS[item.unit]}
+                      </td>
+                      <td className="px-6 py-2 text-right text-muted-foreground">
+                        {item.weightKg != null
+                          ? item.weightKg.toLocaleString("id-ID")
+                          : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>Tracking History</CardTitle>
@@ -204,6 +250,12 @@ export default async function ShipmentDetailPage({
             <span className="text-muted-foreground">Customer: </span>
             {shipment.customer.name} ({shipment.customer.code})
           </div>
+          {shipment.poNumber && (
+            <div>
+              <span className="text-muted-foreground">PO Number: </span>
+              {shipment.poNumber}
+            </div>
+          )}
           <div>
             <span className="text-muted-foreground">Packages: </span>
             {shipment.packageCount}

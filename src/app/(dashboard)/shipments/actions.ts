@@ -32,6 +32,16 @@ function parseShipmentForm(
     const v = formData.get(key);
     return v && String(v) !== "" ? String(v) : undefined;
   };
+  // The items repeater posts one JSON blob; zod does the real validation.
+  const items = (): unknown => {
+    const raw = formData.get("items");
+    if (!raw || String(raw) === "") return undefined;
+    try {
+      return JSON.parse(String(raw));
+    } catch {
+      return undefined;
+    }
+  };
   const fleetRef = (key: string) => {
     const v = formData.get(key);
     if (!v || String(v) === "") {
@@ -42,6 +52,7 @@ function parseShipmentForm(
 
   return {
     customerId: formData.get("customerId"),
+    poNumber: str("poNumber"),
     serviceOfferingId: formData.get("serviceOfferingId"),
     senderName: formData.get("senderName"),
     senderPhone: formData.get("senderPhone"),
@@ -62,6 +73,7 @@ function parseShipmentForm(
     status: str("status"),
     vehicleId: fleetRef("vehicleId"),
     driverId: fleetRef("driverId"),
+    items: items(),
   };
 }
 

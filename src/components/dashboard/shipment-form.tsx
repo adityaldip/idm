@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ShipmentItemsFields } from "@/components/dashboard/shipment-items-fields";
 import {
   ShipmentFleetFields,
   type ShipmentDriverOption,
@@ -85,6 +86,10 @@ export function ShipmentForm({
             </select>
           </div>
           <div className="space-y-2">
+            <Label htmlFor="poNumber">PO Number</Label>
+            <Input id="poNumber" name="poNumber" maxLength={50} />
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="serviceOfferingId">Service *</Label>
             <select
               id="serviceOfferingId"
@@ -127,6 +132,19 @@ export function ShipmentForm({
             <Label htmlFor="description">Package Description</Label>
             <Input id="description" name="description" />
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Daftar Barang</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ShipmentItemsFields />
+          <p className="mt-3 text-xs text-muted-foreground">
+            Opsional. Rincikan muatan per satuan — batang, roll, pcs, dan
+            seterusnya.
+          </p>
         </CardContent>
       </Card>
 

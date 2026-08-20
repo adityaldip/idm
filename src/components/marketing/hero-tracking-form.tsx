@@ -6,16 +6,16 @@ import { ArrowRight, PackageSearch } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-/** Inline resi lookup so visitors can track straight from the hero. */
+/** Inline resi / nomor PO lookup so visitors can track straight from the hero. */
 export function HeroTrackingForm() {
   const router = useRouter();
-  const [trackingNumber, setTrackingNumber] = useState("");
+  const [code, setCode] = useState("");
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    const trimmed = trackingNumber.trim().toUpperCase();
+    const trimmed = code.trim();
     if (trimmed) {
-      router.push(`/tracking/${trimmed}`);
+      router.push(`/tracking?q=${encodeURIComponent(trimmed)}`);
     }
   }
 
@@ -30,10 +30,10 @@ export function HeroTrackingForm() {
       </div>
       <form onSubmit={handleSubmit} className="flex flex-col gap-2.5 sm:flex-row">
         <Input
-          aria-label="Nomor resi"
-          placeholder="Masukkan nomor resi — IDM2026000001"
-          value={trackingNumber}
-          onChange={(event) => setTrackingNumber(event.target.value)}
+          aria-label="Nomor resi atau nomor PO"
+          placeholder="Nomor resi atau nomor PO — IDM2026000001"
+          value={code}
+          onChange={(event) => setCode(event.target.value)}
           className="h-11 border-white/30 bg-black/15 font-mono text-base text-white placeholder:text-white/65 focus-visible:border-gold focus-visible:ring-gold/30"
           required
         />

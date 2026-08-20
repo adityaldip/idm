@@ -4,15 +4,16 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { SHIPMENT_STATUS_LABELS } from "@/lib/constants";
-import { ShipmentStatus } from "@prisma/client";
+import type { StatusOption } from "@/lib/status-option";
 
 type BranchOption = { id: string; name: string; city: string };
 
 export function ShipmentsFilters({
   branches = [],
+  statuses = [],
 }: {
   branches?: BranchOption[];
+  statuses?: StatusOption[];
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -55,9 +56,9 @@ export function ShipmentsFilters({
           onChange={(e) => updateParams({ status: e.target.value })}
         >
           <option value="">All statuses</option>
-          {Object.values(ShipmentStatus).map((status) => (
-            <option key={status} value={status}>
-              {SHIPMENT_STATUS_LABELS[status]}
+          {statuses.map((status) => (
+            <option key={status.code} value={status.code}>
+              {status.label}
             </option>
           ))}
         </select>

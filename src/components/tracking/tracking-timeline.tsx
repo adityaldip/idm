@@ -2,13 +2,12 @@
 
 import { format } from "date-fns";
 import { motion } from "framer-motion";
-import type { ShipmentStatus } from "@prisma/client";
-import { SHIPMENT_STATUS_LABELS } from "@/lib/constants";
+import type { StatusOption } from "@/lib/status-option";
 import { cn } from "@/lib/utils";
 
 type TimelineEvent = {
   id: string;
-  status: ShipmentStatus;
+  status: StatusOption;
   location: string;
   description?: string | null;
   timestamp: Date;
@@ -16,14 +15,16 @@ type TimelineEvent = {
 
 interface TrackingTimelineProps {
   events: TimelineEvent[];
-  currentStatus: ShipmentStatus;
+  currentStatus: StatusOption;
 }
 
 export function TrackingTimeline({ events, currentStatus }: TrackingTimelineProps) {
   return (
     <div className="relative space-y-0">
       {events.map((event, index) => {
-        const isCurrent = event.status === currentStatus && index === events.length - 1;
+        const isCurrent =
+          event.status.code === currentStatus.code &&
+          index === events.length - 1;
         const isLast = index === events.length - 1;
 
         return (
@@ -50,7 +51,7 @@ export function TrackingTimeline({ events, currentStatus }: TrackingTimelineProp
             <div className="flex-1 rounded-lg border border-border/60 bg-card p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="font-medium">
-                  {SHIPMENT_STATUS_LABELS[event.status]}
+                  {event.status.label}
                 </p>
                 <time className="text-xs text-muted-foreground">
                   {format(event.timestamp, "dd MMM yyyy, HH:mm")}

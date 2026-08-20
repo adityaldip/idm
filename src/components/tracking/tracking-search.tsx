@@ -7,15 +7,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 
-export function TrackingSearch() {
+/**
+ * Lookup accepts a tracking number or a customer PO number, so the code travels
+ * as a query string — PO numbers often contain slashes that a path segment
+ * would mangle.
+ */
+export function TrackingSearch({ initialCode = "" }: { initialCode?: string }) {
   const router = useRouter();
-  const [trackingNumber, setTrackingNumber] = useState("");
+  const [code, setCode] = useState(initialCode);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const trimmed = trackingNumber.trim().toUpperCase();
+    const trimmed = code.trim();
     if (trimmed) {
-      router.push(`/tracking/${trimmed}`);
+      router.push(`/tracking?q=${encodeURIComponent(trimmed)}`);
     }
   }
 
@@ -25,9 +30,10 @@ export function TrackingSearch() {
       <CardContent className="p-8">
         <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row">
           <Input
-            placeholder="Enter tracking number"
-            value={trackingNumber}
-            onChange={(e) => setTrackingNumber(e.target.value)}
+            aria-label="Nomor resi atau nomor PO"
+            placeholder="Nomor resi atau nomor PO"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
             className="h-12 font-mono text-base"
             required
           />

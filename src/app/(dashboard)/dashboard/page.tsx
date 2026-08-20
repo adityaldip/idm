@@ -1,5 +1,4 @@
 import { auth } from "@/lib/auth";
-import { SHIPMENT_STATUS_LABELS } from "@/lib/constants";
 import { getDashboardKpis } from "@/services/analytics.service";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Package, TrendingUp, Truck, Users } from "lucide-react";
@@ -111,11 +110,11 @@ export default async function DashboardPage() {
             ) : (
               data.statusBreakdown.map((item) => (
                 <div
-                  key={item.status}
+                  key={item.code}
                   className="flex items-center justify-between text-sm"
                 >
                   <span>
-                    {SHIPMENT_STATUS_LABELS[item.status] ?? item.status}
+                    {item.label}
                   </span>
                   <span className="font-medium">{item.count}</span>
                 </div>

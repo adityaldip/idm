@@ -1,11 +1,10 @@
-import { ShipmentStatus } from "@prisma/client";
 import { z } from "zod";
 import { requirePermission } from "@/lib/api/auth";
 import { apiError } from "@/lib/api/response";
 import { exportShipmentsPdf } from "@/services/export.service";
 
 const exportFiltersSchema = z.object({
-  status: z.nativeEnum(ShipmentStatus).optional(),
+  status: z.string().optional(),
   branchId: z.string().optional(),
   dateFrom: z.string().datetime().optional(),
   dateTo: z.string().datetime().optional(),

@@ -1,3 +1,4 @@
+import type { ItemUnit } from "@prisma/client";
 import { COMPANY } from "@/lib/company";
 
 export const COMPANY_NAME = COMPANY.name;
@@ -44,6 +45,7 @@ export const DASHBOARD_NAV_ICONS = [
   "Inbox",
   "UserCog",
   "Settings",
+  "Route",
 ] as const;
 
 export type DashboardNavIcon = (typeof DASHBOARD_NAV_ICONS)[number];
@@ -92,6 +94,11 @@ export const DASHBOARD_NAV_GROUPS: readonly DashboardNavGroup[] = [
     items: [
       { href: "/users", label: "Users", icon: "UserCog" },
       { href: "/settings", label: "Settings", icon: "Settings" },
+      {
+        href: "/settings/shipment-status",
+        label: "Shipment Status",
+        icon: "Route",
+      },
     ],
   },
 ];
@@ -121,16 +128,6 @@ export const ROLE_LABELS: Record<string, string> = {
   CUSTOMER_SERVICE: "Customer Service",
 };
 
-export const SHIPMENT_STATUS_LABELS: Record<string, string> = {
-  CREATED: "Created",
-  PICKED_UP: "Picked Up",
-  IN_WAREHOUSE: "In Warehouse",
-  IN_TRANSIT: "In Transit",
-  OUT_FOR_DELIVERY: "Out For Delivery",
-  DELIVERED: "Delivered",
-  RETURNED: "Returned",
-};
-
 export const SERVICE_TYPE_LABELS: Record<string, string> = {
   EXPRESS: "Express",
   STANDARD: "Standard",
@@ -138,4 +135,20 @@ export const SERVICE_TYPE_LABELS: Record<string, string> = {
   COLD_CHAIN: "Cold Chain",
   LAST_MILE: "Last Mile",
   INTERNATIONAL: "International",
+};
+
+export const ITEM_UNIT_LABELS: Record<ItemUnit, string> = {
+  PCS: "Pcs",
+  BATANG: "Batang",
+  ROLL: "Roll",
+  HASPEL: "Haspel",
+  METER: "Meter",
+  KG: "Kg",
+  TON: "Ton",
+  M3: "m³",
+  KOLI: "Koli",
+  PALLET: "Pallet",
+  SET: "Set",
+  UNIT: "Unit",
+  DRUM: "Drum",
 };

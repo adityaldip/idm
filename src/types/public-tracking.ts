@@ -1,8 +1,10 @@
-import type { ShipmentStatus } from "@prisma/client";
+import type { StatusOption } from "@/lib/status-option";
 
 export type PublicTrackingData = {
   trackingNumber: string;
-  status: ShipmentStatus;
+  poNumber: string | null;
+  statusId: string;
+  status: StatusOption;
   serviceOffering: { name: string } | null;
   senderCity: string;
   recipientCity: string;
@@ -12,7 +14,7 @@ export type PublicTrackingData = {
   createdAt: Date;
   trackingHistory: {
     id: string;
-    status: ShipmentStatus;
+    status: StatusOption;
     location: string;
     description: string | null;
     timestamp: Date;

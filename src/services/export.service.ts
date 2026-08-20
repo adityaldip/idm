@@ -4,10 +4,9 @@ import * as XLSX from "xlsx";
 import type { Role } from "@prisma/client";
 import { listShipments } from "./shipment.service";
 import { logActivity } from "./activity.service";
-import { SHIPMENT_STATUS_LABELS } from "@/lib/constants";
 
 type ExportFilters = {
-  status?: import("@prisma/client").ShipmentStatus;
+  status?: string;
   branchId?: string;
   dateFrom?: string;
   dateTo?: string;
@@ -24,7 +23,8 @@ export async function exportShipmentsExcel(
 
   const rows = items.map((s) => ({
     "Tracking Number": s.trackingNumber,
-    Status: SHIPMENT_STATUS_LABELS[s.status] ?? s.status,
+    "PO Number": s.poNumber ?? "",
+    Status: s.status.label,
     Customer: s.customer.name,
     "Sender City": s.senderCity,
     "Recipient City": s.recipientCity,
@@ -69,6 +69,7 @@ export async function exportShipmentsPdf(
     head: [
       [
         "Tracking #",
+        "PO #",
         "Status",
         "Customer",
         "From",
@@ -79,7 +80,8 @@ export async function exportShipmentsPdf(
     ],
     body: items.map((s) => [
       s.trackingNumber,
-      SHIPMENT_STATUS_LABELS[s.status] ?? s.status,
+      s.poNumber ?? "-",
+      s.status.label,
       s.customer.name,
       s.senderCity,
       s.recipientCity,

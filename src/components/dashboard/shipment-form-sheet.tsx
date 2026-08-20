@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Pencil, Trash2, Package, User, MapPin, Truck } from "lucide-react";
+import { Pencil, Trash2, Package, User, MapPin, Truck, Boxes } from "lucide-react";
 import { toast } from "sonner";
 import type { ShipmentEditItem } from "@/lib/shipment-edit-item";
 import {
@@ -18,6 +18,7 @@ import {
   Input,
   inputClass,
 } from "@/components/dashboard/form-sheet";
+import { ShipmentItemsFields } from "@/components/dashboard/shipment-items-fields";
 import {
   ShipmentFleetFields,
   type ShipmentDriverOption,
@@ -94,6 +95,15 @@ export function EditShipmentSheet({
             ))}
           </FormSelect>
         </FormField>
+        <FormField id="poNumber" label="PO Number">
+          <Input
+            id="poNumber"
+            name="poNumber"
+            maxLength={50}
+            className={inputClass}
+            defaultValue={shipment.poNumber ?? ""}
+          />
+        </FormField>
         <FormField id="serviceOfferingId" label="Service" required>
           <FormSelect
             id="serviceOfferingId"
@@ -151,6 +161,10 @@ export function EditShipmentSheet({
             />
           </FormField>
         </div>
+      </FormSection>
+
+      <FormSection icon={Boxes} title="Daftar Barang">
+        <ShipmentItemsFields defaultItems={shipment.items} />
       </FormSection>
 
       <FormSection icon={User} title="Sender">

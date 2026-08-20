@@ -13,6 +13,7 @@ import {
   MessageSquare,
   Newspaper,
   Package,
+  Route,
   Settings,
   Truck,
   UserCog,
@@ -42,6 +43,7 @@ const iconMap = {
   Inbox,
   UserCog,
   Settings,
+  Route,
 } as const satisfies Record<DashboardNavIcon, LucideIcon>;
 
 function isNavItemActive(pathname: string, href: string) {

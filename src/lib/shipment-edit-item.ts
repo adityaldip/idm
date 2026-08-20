@@ -1,9 +1,18 @@
-import type { Shipment, ShipmentStatus } from "@prisma/client";
+import type { ItemUnit, Shipment, ShipmentItem } from "@prisma/client";
+
+export type ShipmentEditItemLine = {
+  name: string;
+  quantity: number;
+  unit: ItemUnit;
+  weightKg: number | null;
+  volumeM3: number | null;
+  notes: string | null;
+};
 
 export type ShipmentEditItem = {
   id: string;
   trackingNumber: string;
-  status: ShipmentStatus;
+  poNumber: string | null;
   customerId: string;
   serviceOfferingId: string;
   senderName: string;
@@ -23,6 +32,7 @@ export type ShipmentEditItem = {
   notes: string | null;
   vehicleId: string | null;
   driverId: string | null;
+  items: ShipmentEditItemLine[];
 };
 
 export function toShipmentEditItem(
@@ -30,7 +40,7 @@ export function toShipmentEditItem(
     Shipment,
     | "id"
     | "trackingNumber"
-    | "status"
+    | "poNumber"
     | "customerId"
     | "serviceOfferingId"
     | "senderName"
@@ -50,12 +60,12 @@ export function toShipmentEditItem(
     | "notes"
     | "vehicleId"
     | "driverId"
-  >,
+  > & { items?: ShipmentItem[] },
 ): ShipmentEditItem {
   return {
     id: shipment.id,
     trackingNumber: shipment.trackingNumber,
-    status: shipment.status,
+    poNumber: shipment.poNumber,
     customerId: shipment.customerId,
     serviceOfferingId: shipment.serviceOfferingId,
     senderName: shipment.senderName,
@@ -76,5 +86,13 @@ export function toShipmentEditItem(
     notes: shipment.notes,
     vehicleId: shipment.vehicleId,
     driverId: shipment.driverId,
+    items: (shipment.items ?? []).map((item) => ({
+      name: item.name,
+      quantity: Number(item.quantity),
+      unit: item.unit,
+      weightKg: item.weightKg,
+      volumeM3: item.volumeM3,
+      notes: item.notes,
+    })),
   };
 }

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { Suspense } from "react";
-import { ShipmentStatus } from "@prisma/client";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { StatusBadge } from "@/components/dashboard/status-badge";
 import { EmptyState } from "@/components/dashboard/empty-state";
@@ -17,6 +16,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { getSessionActor } from "@/lib/server-session";
 import { hasPermission } from "@/lib/permissions";
 import { listShipments } from "@/services/shipment.service";
+import { getShipmentStatuses } from "@/services/shipment-status.service";
+import { allowedNextStatuses } from "@/lib/shipment-status";
 import { listActiveServiceOfferings } from "@/services/cms.service";
 import { listFleetForAssignment } from "@/services/fleet.service";
 import { prisma } from "@/lib/prisma";
@@ -62,7 +63,7 @@ export default async function ShipmentsPage({ searchParams }: ShipmentsPageProps
       page,
       limit: 20,
       search: params.search,
-      status: params.status as ShipmentStatus | undefined,
+      status: params.status,
       branchId: params.branchId,
       dateFrom: toFilterDate(params.dateFrom),
       dateTo: toFilterDate(params.dateTo, true),
@@ -70,6 +71,8 @@ export default async function ShipmentsPage({ searchParams }: ShipmentsPageProps
     },
     actor,
   );
+
+  const statuses = await getShipmentStatuses();
 
   const [customers, branches, offerings, fleet] = await Promise.all([
     canWrite
@@ -109,7 +112,7 @@ export default async function ShipmentsPage({ searchParams }: ShipmentsPageProps
       />
 
       <Suspense>
-        <ShipmentsFilters branches={filterBranches} />
+        <ShipmentsFilters branches={filterBranches} statuses={statuses} />
       </Suspense>
 
       {items.length === 0 ? (
@@ -136,6 +139,7 @@ export default async function ShipmentsPage({ searchParams }: ShipmentsPageProps
                 <thead>
                   <tr className="border-b border-border bg-muted/40 text-left">
                     <th className="px-4 py-3 font-medium">Tracking #</th>
+                    <th className="px-4 py-3 font-medium">PO #</th>
                     <th className="px-4 py-3 font-medium">Status</th>
                     <th className="px-4 py-3 font-medium">Customer</th>
                     <th className="px-4 py-3 font-medium">Route</th>
@@ -160,6 +164,9 @@ export default async function ShipmentsPage({ searchParams }: ShipmentsPageProps
                         >
                           {shipment.trackingNumber}
                         </Link>
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
+                        {shipment.poNumber ?? "—"}
                       </td>
                       <td className="px-4 py-3">
                         <StatusBadge status={shipment.status} />
@@ -189,6 +196,10 @@ export default async function ShipmentsPage({ searchParams }: ShipmentsPageProps
                                 shipmentId={shipment.id}
                                 trackingNumber={shipment.trackingNumber}
                                 currentStatus={shipment.status}
+                                nextStatuses={allowedNextStatuses(
+                                  shipment.statusId,
+                                  statuses,
+                                )}
                                 branches={branches}
                               />
                             )}

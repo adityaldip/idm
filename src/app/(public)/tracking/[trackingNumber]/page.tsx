@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { TrackingResult } from "@/components/tracking/tracking-result";
 import { getPublicTracking } from "@/services/tracking.service";
+import { getShipmentStatuses } from "@/services/shipment-status.service";
+import { statusProgress } from "@/lib/shipment-status";
 
 interface TrackingPageProps {
   params: Promise<{ trackingNumber: string }>;
@@ -27,7 +29,10 @@ export default async function TrackingResultPage({ params }: TrackingPageProps) 
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-16 md:px-6 lg:px-8">
-      <TrackingResult shipment={shipment} />
+      <TrackingResult
+        shipment={shipment}
+        progress={statusProgress(shipment.statusId, await getShipmentStatuses())}
+      />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { PrismaClient, Role, ShipmentStatus } from "@prisma/client";
+import { PrismaClient, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
@@ -341,12 +341,37 @@ async function main() {
     },
   });
 
+  const STATUS_DEFS = [
+    { code: "CREATED", label: "Created", color: "slate", sortOrder: 0, isInitial: true },
+    { code: "PICKED_UP", label: "Picked Up", color: "blue", sortOrder: 1 },
+    { code: "IN_WAREHOUSE", label: "In Warehouse", color: "indigo", sortOrder: 2 },
+    { code: "IN_TRANSIT", label: "In Transit", color: "amber", sortOrder: 3 },
+    { code: "OUT_FOR_DELIVERY", label: "Out for Delivery", color: "orange", sortOrder: 4 },
+    { code: "DELIVERED", label: "Delivered", color: "emerald", sortOrder: 5, isFinal: true },
+    { code: "RETURNED", label: "Returned", color: "red", sortOrder: 6, isFinal: true, allowFromAny: true },
+  ];
+
+  for (const def of STATUS_DEFS) {
+    await prisma.shipmentStatusDef.upsert({
+      where: { code: def.code },
+      update: {},
+      create: def,
+    });
+  }
+
+  const statusDefs = await prisma.shipmentStatusDef.findMany();
+  const statusId = (code: string) => {
+    const def = statusDefs.find((d) => d.code === code);
+    if (!def) throw new Error(`Missing status ${code}`);
+    return def.id;
+  };
+
   const shipment = await prisma.shipment.upsert({
     where: { trackingNumber: "IDM2026000001" },
     update: {},
     create: {
       trackingNumber: "IDM2026000001",
-      status: ShipmentStatus.IN_TRANSIT,
+      statusId: statusId("IN_TRANSIT"),
       serviceOfferingId: defaultOffering.id,
       customerId: customer.id,
       senderName: "Andi Wijaya",
@@ -374,28 +399,28 @@ async function main() {
 
   const trackingEvents = [
     {
-      status: ShipmentStatus.CREATED,
+      statusId: statusId("CREATED"),
       location: "Kantor Pusat Semarang",
       description: "Shipment created",
       branchId: hqBranch.id,
       daysAgo: 3,
     },
     {
-      status: ShipmentStatus.PICKED_UP,
+      statusId: statusId("PICKED_UP"),
       location: "Tembalang, Semarang",
       description: "Package picked up from sender",
       branchId: hqBranch.id,
       daysAgo: 2,
     },
     {
-      status: ShipmentStatus.IN_WAREHOUSE,
+      statusId: statusId("IN_WAREHOUSE"),
       location: "Hub Warehouse Semarang",
       description: "Arrived at origin warehouse",
       branchId: hqBranch.id,
       daysAgo: 2,
     },
     {
-      status: ShipmentStatus.IN_TRANSIT,
+      statusId: statusId("IN_TRANSIT"),
       location: "Bekasi Transit Hub",
       description: "In transit to destination",
       branchId: bekasiBranch.id,
@@ -407,14 +432,14 @@ async function main() {
     const existing = await prisma.trackingHistory.findFirst({
       where: {
         shipmentId: shipment.id,
-        status: event.status,
+        statusId: event.statusId,
       },
     });
     if (!existing) {
       await prisma.trackingHistory.create({
         data: {
           shipmentId: shipment.id,
-          status: event.status,
+          statusId: event.statusId,
           location: event.location,
           description: event.description,
           branchId: event.branchId,

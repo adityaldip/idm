@@ -1,9 +1,18 @@
 import { z } from "zod";
-import { ShipmentStatus } from "@prisma/client";
+import { ItemUnit } from "@prisma/client";
 import { paginationSchema } from "./common";
 
+export const shipmentItemSchema = z.object({
+  name: z.string().min(1).max(200),
+  quantity: z.number().positive(),
+  unit: z.nativeEnum(ItemUnit),
+  weightKg: z.number().nonnegative().optional(),
+  volumeM3: z.number().nonnegative().optional(),
+  notes: z.string().max(500).optional(),
+});
+
 export const shipmentListSchema = paginationSchema.extend({
-  status: z.nativeEnum(ShipmentStatus).optional(),
+  status: z.string().optional(),
   branchId: z.string().optional(),
   customerId: z.string().optional(),
   dateFrom: z.string().datetime().optional(),
@@ -12,6 +21,7 @@ export const shipmentListSchema = paginationSchema.extend({
 
 export const createShipmentSchema = z.object({
   customerId: z.string().min(1),
+  poNumber: z.string().max(50).optional(),
   serviceOfferingId: z.string().min(1),
   senderName: z.string().min(1),
   senderPhone: z.string().min(1),
@@ -35,17 +45,19 @@ export const createShipmentSchema = z.object({
   vehicleId: z.string().optional(),
   driverId: z.string().optional(),
   notes: z.string().optional(),
+  items: z.array(shipmentItemSchema).max(100).optional(),
 });
 
 export const updateShipmentSchema = createShipmentSchema
   .partial()
   .extend({
-    status: z.nativeEnum(ShipmentStatus).optional(),
+    status: z.string().optional(),
     currentLocation: z.string().optional(),
     actualDelivery: z.string().datetime().optional(),
     vehicleId: z.string().nullable().optional(),
     driverId: z.string().nullable().optional(),
   });
 
+export type ShipmentItemInput = z.infer<typeof shipmentItemSchema>;
 export type CreateShipmentInput = z.infer<typeof createShipmentSchema>;
 export type UpdateShipmentInput = z.infer<typeof updateShipmentSchema>;

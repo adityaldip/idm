@@ -1,8 +1,7 @@
 import { z } from "zod";
-import { ShipmentStatus } from "@prisma/client";
 
 export const addTrackingEventSchema = z.object({
-  status: z.nativeEnum(ShipmentStatus),
+  status: z.string().min(1),
   location: z.string().min(1),
   description: z.string().optional(),
   branchId: z.string().optional(),

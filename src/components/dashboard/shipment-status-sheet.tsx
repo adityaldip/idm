@@ -4,10 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Route } from "lucide-react";
 import { toast } from "sonner";
-import type { ShipmentStatus } from "@prisma/client";
 import { addTrackingAction } from "@/app/(dashboard)/shipments/actions";
-import { VALID_STATUS_TRANSITIONS } from "@/lib/shipment-status";
-import { SHIPMENT_STATUS_LABELS } from "@/lib/constants";
+import type { StatusOption } from "@/lib/status-option";
 import { Button } from "@/components/ui/button";
 import {
   FormSheet,
@@ -24,20 +22,20 @@ export function ShipmentStatusSheet({
   shipmentId,
   trackingNumber,
   currentStatus,
+  nextStatuses,
   branches,
 }: {
   shipmentId: string;
   trackingNumber: string;
-  currentStatus: ShipmentStatus;
+  currentStatus: StatusOption;
+  nextStatuses: StatusOption[];
   branches: BranchOption[];
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const allowedStatuses = VALID_STATUS_TRANSITIONS[currentStatus] ?? [];
-
-  if (allowedStatuses.length === 0) return null;
+  if (nextStatuses.length === 0) return null;
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -75,7 +73,7 @@ export function ShipmentStatusSheet({
         <p className="text-sm text-muted-foreground">
           Current:{" "}
           <span className="font-medium text-foreground">
-            {SHIPMENT_STATUS_LABELS[currentStatus]}
+            {currentStatus.label}
           </span>
         </p>
         <FormField id="status" label="New Status" required>
@@ -83,9 +81,9 @@ export function ShipmentStatusSheet({
             <option value="" disabled>
               Select next status
             </option>
-            {allowedStatuses.map((status) => (
-              <option key={status} value={status}>
-                {SHIPMENT_STATUS_LABELS[status]}
+            {nextStatuses.map((status) => (
+              <option key={status.code} value={status.code}>
+                {status.label}
               </option>
             ))}
           </FormSelect>
