@@ -52,11 +52,17 @@ execSync(`zip -r "${outZip}" ${paths.map((p) => `"${p}"`).join(" ")}`, {
   stdio: "inherit",
 });
 
+const numberedZip = path.join(root, `next-build-${buildId}.zip`);
+if (fs.existsSync(numberedZip)) fs.unlinkSync(numberedZip);
+fs.copyFileSync(outZip, numberedZip);
+
 const sizeMb = (fs.statSync(outZip).size / (1024 * 1024)).toFixed(1);
 console.log(`\nCreated ${outZip}`);
+console.log(`Created ${numberedZip}`);
 console.log(`BUILD_ID: ${buildId}`);
 console.log(`Static JS files: ${staticChunks}`);
 console.log(`Size: ${sizeMb} MB`);
 console.log("\nServer deploy:");
+console.log(`  Upload next-build-${buildId}.zip (or next-build.zip)`);
 console.log("  rm -rf .next && unzip -o next-build.zip && touch tmp/restart.txt");
 console.log("  Do NOT run npm run build on the server after extracting.");
