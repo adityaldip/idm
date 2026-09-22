@@ -103,6 +103,25 @@ export function TrackingResult({ shipment, progress }: TrackingResultProps) {
                 <p className="font-medium">{shipment.recipientCity}</p>
               </div>
             </div>
+
+            {(shipment.driver || shipment.vehicle) && (
+              <div className="grid gap-4 rounded-lg bg-muted/50 p-4 text-sm sm:grid-cols-2">
+                {shipment.driver && (
+                  <div>
+                    <p className="text-muted-foreground">Driver</p>
+                    <p className="mt-1 font-medium">{shipment.driver.name}</p>
+                  </div>
+                )}
+                {shipment.vehicle && (
+                  <div>
+                    <p className="text-muted-foreground">Kendaraan</p>
+                    <p className="mt-1 font-medium font-mono tracking-wide">
+                      {shipment.vehicle.plateNumber}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

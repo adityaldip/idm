@@ -63,6 +63,7 @@ const shipmentInclude = {
     include: {
       status: true,
       branch: { select: { id: true, name: true, city: true } },
+      photos: { orderBy: { sortOrder: "asc" as const } },
     },
   },
   items: { orderBy: { sortOrder: "asc" as const } },

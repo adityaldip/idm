@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { canTransitionStatus } from "@/lib/shipment-status";
 import { listShipmentStatuses } from "./shipment-status.service";
 import type { AddTrackingEventInput } from "@/lib/validators/tracking";
+import type { SavedTrackingPhoto } from "@/lib/tracking-photo-store";
 import { getShipmentById } from "./shipment.service";
 import type { Role } from "@prisma/client";
 import { logActivity } from "./activity.service";
@@ -25,6 +26,7 @@ export async function addTrackingEvent(
   input: AddTrackingEventInput,
   userId: string,
   actor: { role: Role; branchId?: string | null },
+  photos: Omit<SavedTrackingPhoto, "absolutePath">[] = [],
 ) {
   const shipment = await getShipmentById(shipmentId, actor);
   if (!shipment) return null;
@@ -46,6 +48,17 @@ export async function addTrackingEvent(
         description: input.description,
         branchId: input.branchId,
         updatedById: userId,
+        ...(photos.length > 0 && {
+          photos: {
+            create: photos.map((photo) => ({
+              url: photo.url,
+              width: photo.width,
+              height: photo.height,
+              sizeBytes: photo.sizeBytes,
+              sortOrder: photo.sortOrder,
+            })),
+          },
+        }),
       },
       include: {
         branch: { select: { id: true, name: true, city: true } },
@@ -69,7 +82,10 @@ export async function addTrackingEvent(
         customer: { select: { id: true, code: true, name: true } },
         trackingHistory: {
           orderBy: { timestamp: "asc" },
-          include: { branch: { select: { id: true, name: true, city: true } } },
+          include: {
+            branch: { select: { id: true, name: true, city: true } },
+            photos: { orderBy: { sortOrder: "asc" } },
+          },
         },
       },
     });
@@ -104,6 +120,8 @@ export async function getPublicTracking(trackingNumber: string) {
       estimatedDelivery: true,
       actualDelivery: true,
       createdAt: true,
+      driver: { select: { name: true } },
+      vehicle: { select: { plateNumber: true } },
       trackingHistory: {
         orderBy: { timestamp: "asc" },
         select: {
@@ -113,6 +131,10 @@ export async function getPublicTracking(trackingNumber: string) {
           description: true,
           timestamp: true,
           branch: { select: { name: true, city: true } },
+          photos: {
+            orderBy: { sortOrder: "asc" },
+            select: { id: true, url: true, width: true, height: true },
+          },
         },
       },
     },

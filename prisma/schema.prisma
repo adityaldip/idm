@@ -265,9 +265,25 @@ model TrackingHistory {
   updatedById String?
   updatedBy   User?          @relation("TrackingUpdatedBy", fields: [updatedById], references: [id])
   timestamp   DateTime       @default(now())
+  photos      TrackingPhoto[]
 
   @@index([shipmentId, timestamp])
   @@map("tracking_histories")
+}
+
+model TrackingPhoto {
+  id                String          @id @default(cuid())
+  trackingHistoryId String
+  trackingHistory   TrackingHistory @relation(fields: [trackingHistoryId], references: [id], onDelete: Cascade)
+  url               String
+  width             Int
+  height            Int
+  sizeBytes         Int
+  sortOrder         Int             @default(0)
+  createdAt         DateTime        @default(now())
+
+  @@index([trackingHistoryId, sortOrder])
+  @@map("tracking_photos")
 }
 
 model Vehicle {

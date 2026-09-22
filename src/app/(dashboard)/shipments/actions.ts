@@ -14,7 +14,13 @@ import { assertActiveServiceOffering } from "@/services/cms.service";
 import {
   addTrackingEvent,
   InvalidStatusTransitionError,
+  UnknownStatusError,
 } from "@/services/tracking.service";
+import {
+  deleteSavedTrackingPhotos,
+  saveTrackingPhotos,
+  TrackingPhotoError,
+} from "@/lib/tracking-photo-store";
 
 function parseShipmentForm(
   formData: FormData,
@@ -165,13 +171,31 @@ export async function addTrackingAction(shipmentId: string, formData: FormData) 
     return { error: "Invalid tracking update data." };
   }
 
+  let photos: Awaited<ReturnType<typeof saveTrackingPhotos>> = [];
   try {
-    await addTrackingEvent(shipmentId, parsed.data, actor.id, actor);
+    photos = await saveTrackingPhotos(shipmentId, formData);
+    const event = await addTrackingEvent(
+      shipmentId,
+      parsed.data,
+      actor.id,
+      actor,
+      photos,
+    );
+    if (!event) {
+      await deleteSavedTrackingPhotos(photos);
+      return { error: "Shipment not found or access denied." };
+    }
     revalidatePath(`/shipments/${shipmentId}`);
     revalidatePath("/shipments");
+    revalidatePath("/tracking");
     return { success: true };
   } catch (error) {
-    if (error instanceof InvalidStatusTransitionError) {
+    await deleteSavedTrackingPhotos(photos);
+    if (
+      error instanceof InvalidStatusTransitionError ||
+      error instanceof UnknownStatusError ||
+      error instanceof TrackingPhotoError
+    ) {
       return { error: error.message };
     }
     return { error: "Failed to add tracking update." };

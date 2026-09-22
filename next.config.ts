@@ -4,6 +4,10 @@ const nextConfig: NextConfig = {
   // Shared hosting (cPanel) has low process limits; avoid EAGAIN during build.
   experimental: {
     cpus: 1,
+    // Three compressed tracking photos (~400KB each) plus form fields.
+    serverActions: {
+      bodySizeLimit: "4mb",
+    },
   },
   images: {
     remotePatterns: [

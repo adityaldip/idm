@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { TrackingPhotoFields } from "@/components/dashboard/tracking-photo-fields";
 import { toast } from "sonner";
 
 type BranchOption = { id: string; name: string; city: string };
@@ -113,6 +114,8 @@ export function TrackingUpdateForm({
               placeholder="Optional notes about this update"
             />
           </div>
+
+          <TrackingPhotoFields />
 
           <div className="space-y-2">
             <Label htmlFor="branchId">Branch</Label>

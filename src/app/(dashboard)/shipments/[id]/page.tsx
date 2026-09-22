@@ -4,6 +4,7 @@ import { Boxes, MapPin, Package, Truck } from "lucide-react";
 import { format } from "date-fns";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { StatusBadge } from "@/components/dashboard/status-badge";
+import { TrackingPhotoGallery } from "@/components/tracking/tracking-photo-gallery";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getSessionActor } from "@/lib/server-session";
@@ -232,6 +233,12 @@ export default async function ShipmentDetailPage({
                       <p className="mt-0.5 text-xs text-muted-foreground">
                         {event.branch.name}
                       </p>
+                    )}
+                    {event.photos.length > 0 && (
+                      <TrackingPhotoGallery
+                        photos={event.photos}
+                        altPrefix={event.status.label}
+                      />
                     )}
                   </div>
                 </div>

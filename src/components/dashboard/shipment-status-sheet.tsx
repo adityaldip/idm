@@ -15,6 +15,7 @@ import {
   Input,
   inputClass,
 } from "@/components/dashboard/form-sheet";
+import { TrackingPhotoFields } from "@/components/dashboard/tracking-photo-fields";
 
 type BranchOption = { id: string; name: string; city: string };
 
@@ -104,6 +105,9 @@ export function ShipmentStatusSheet({
             className={inputClass}
             placeholder="Optional update notes"
           />
+        </FormField>
+        <FormField id="photos" label="Foto">
+          <TrackingPhotoFields />
         </FormField>
         <FormField id="branchId" label="Branch">
           <FormSelect id="branchId" name="branchId" defaultValue="">

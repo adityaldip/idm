@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# operator-uploaded tracking photos — survive deploys, stay off git
+/public/uploads/tracking/**
+!/public/uploads/tracking/.gitkeep

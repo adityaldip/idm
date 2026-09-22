@@ -4,6 +4,10 @@ import { format } from "date-fns";
 import { motion } from "framer-motion";
 import type { StatusOption } from "@/lib/status-option";
 import { cn } from "@/lib/utils";
+import {
+  TrackingPhotoGallery,
+  type TrackingPhotoView,
+} from "@/components/tracking/tracking-photo-gallery";
 
 type TimelineEvent = {
   id: string;
@@ -11,6 +15,7 @@ type TimelineEvent = {
   location: string;
   description?: string | null;
   timestamp: Date;
+  photos?: TrackingPhotoView[];
 };
 
 interface TrackingTimelineProps {
@@ -50,18 +55,20 @@ export function TrackingTimeline({ events, currentStatus }: TrackingTimelineProp
 
             <div className="flex-1 rounded-lg border border-border/60 bg-card p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="font-medium">
-                  {event.status.label}
-                </p>
+                <p className="font-medium">{event.status.label}</p>
                 <time className="text-xs text-muted-foreground">
                   {format(event.timestamp, "dd MMM yyyy, HH:mm")}
                 </time>
               </div>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {event.location}
-              </p>
+              <p className="mt-1 text-sm text-muted-foreground">{event.location}</p>
               {event.description && (
                 <p className="mt-1 text-sm">{event.description}</p>
+              )}
+              {event.photos && event.photos.length > 0 && (
+                <TrackingPhotoGallery
+                  photos={event.photos}
+                  altPrefix={event.status.label}
+                />
               )}
             </div>
           </motion.div>
