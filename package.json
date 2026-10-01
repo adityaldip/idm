@@ -13,6 +13,7 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
+    "db:seed:tracking": "tsx prisma/seed-tracking.ts",
     "db:studio": "prisma studio",
     "db:admin": "docker compose up -d postgres adminer",
     "postinstall": "node scripts/postinstall.mjs"
