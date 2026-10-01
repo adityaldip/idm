@@ -2,8 +2,6 @@
 
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, Quote, Star } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 
 type TestimonialItem = {
   id: string;
@@ -13,6 +11,9 @@ type TestimonialItem = {
   content: string;
   rating: number;
 };
+
+const navButton =
+  "flex size-9 items-center justify-center rounded-full border border-white/20 text-white transition-colors hover:border-gold hover:bg-gold";
 
 export function TestimonialsCarousel({
   items,
@@ -34,16 +35,17 @@ export function TestimonialsCarousel({
 
   return (
     <div className="relative">
-      <Card className="overflow-hidden border-border/60 shadow-md">
-        <CardContent className="p-8 md:p-10">
-          <Quote className="size-8 text-gold/60" />
-          <p className="mt-4 text-lg leading-relaxed text-muted-foreground md:text-xl">
+      {/* Glass card, designed for the dark navy testimonials band */}
+      <div className="overflow-hidden rounded-2xl border border-white/15 bg-white/[0.07] text-white shadow-2xl shadow-black/20 backdrop-blur-md">
+        <div className="p-8 md:p-10">
+          <Quote className="size-8 text-gold" />
+          <p className="mt-4 text-lg leading-relaxed text-white/90 md:text-xl">
             &ldquo;{current.content}&rdquo;
           </p>
           <div className="mt-6 flex items-center justify-between gap-4">
             <div>
               <p className="font-heading font-semibold">{current.name}</p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-white/60">
                 {[current.role, current.company].filter(Boolean).join(" · ")}
               </p>
               <div className="mt-2 flex gap-0.5">
@@ -57,17 +59,27 @@ export function TestimonialsCarousel({
             </div>
             {items.length > 1 && (
               <div className="flex gap-2">
-                <Button variant="outline" size="icon" onClick={prev}>
+                <button
+                  type="button"
+                  aria-label="Testimoni sebelumnya"
+                  onClick={prev}
+                  className={navButton}
+                >
                   <ChevronLeft className="size-4" />
-                </Button>
-                <Button variant="outline" size="icon" onClick={next}>
+                </button>
+                <button
+                  type="button"
+                  aria-label="Testimoni berikutnya"
+                  onClick={next}
+                  className={navButton}
+                >
                   <ChevronRight className="size-4" />
-                </Button>
+                </button>
               </div>
             )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
       {items.length > 1 && (
         <div className="mt-4 flex justify-center gap-2">
           {items.map((item, i) => (
@@ -76,8 +88,8 @@ export function TestimonialsCarousel({
               type="button"
               aria-label={`Testimonial ${i + 1}`}
               onClick={() => setIndex(i)}
-              className={`size-2 rounded-full transition-colors ${
-                i === index ? "bg-primary" : "bg-muted-foreground/30"
+              className={`h-2 rounded-full transition-all ${
+                i === index ? "w-6 bg-gold" : "w-2 bg-white/30"
               }`}
             />
           ))}

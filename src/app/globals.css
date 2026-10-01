@@ -185,13 +185,44 @@
       radial-gradient(42rem 26rem at 70% 95%, oklch(0.35 0.09 255 / 45%) 0%, transparent 65%);
     animation: aurora-drift 20s ease-in-out infinite alternate;
   }
-  /* Grid lines that fade out towards the edges */
-  .grid-fade {
-    background-image:
-      linear-gradient(oklch(1 0 0 / 6%) 1px, transparent 1px),
-      linear-gradient(90deg, oklch(1 0 0 / 6%) 1px, transparent 1px);
-    background-size: 56px 56px;
-    mask-image: radial-gradient(120% 90% at 50% 0%, #000 25%, transparent 78%);
+  /* Homepage hero depth: deep navy pooled bottom-left, a soft spotlight
+     behind the map, and a vignette darkening the edges. */
+  .hero-depth {
+    background:
+      radial-gradient(48rem 30rem at 72% 42%, oklch(0.62 0.12 232 / 38%) 0%, transparent 70%),
+      radial-gradient(50rem 34rem at 0% 100%, oklch(0.22 0.07 258 / 70%) 0%, transparent 70%),
+      radial-gradient(140% 120% at 55% 35%, transparent 55%, oklch(0.18 0.06 258 / 55%) 100%);
+  }
+  /* Dark navy band for mid-page sections (how-it-works, testimonials,
+     footer): same palette as the hero so the page alternates light/dark. */
+  .section-navy {
+    background:
+      radial-gradient(40rem 26rem at 85% 0%, oklch(0.58 0.11 235 / 35%) 0%, transparent 70%),
+      radial-gradient(36rem 24rem at 10% 100%, oklch(0.684 0.127 73.5 / 12%) 0%, transparent 70%),
+      linear-gradient(160deg, oklch(0.36 0.08 250) 0%, oklch(0.27 0.07 255) 100%);
+  }
+  /* Faint blue wash for light sections that should read as a tint, not white */
+  .section-tint {
+    background:
+      radial-gradient(36rem 26rem at 80% 40%, oklch(0.75 0.08 235 / 28%) 0%, transparent 70%),
+      radial-gradient(30rem 22rem at 5% 90%, oklch(0.85 0.06 80 / 22%) 0%, transparent 70%),
+      oklch(0.975 0.01 240);
+  }
+  .dark .section-tint {
+    background:
+      radial-gradient(36rem 26rem at 80% 40%, oklch(0.45 0.09 240 / 30%) 0%, transparent 70%),
+      oklch(0.2 0.02 255);
+  }
+  /* Topographic contour lines (public/hero-contours.svg), centred on the map */
+  .hero-contours {
+    background: url("/hero-contours.svg") center / cover no-repeat;
+    mask-image: radial-gradient(75% 85% at 70% 45%, #000 30%, transparent 85%);
+  }
+  /* Fine film grain so the gradients don't read as flat plastic */
+  .hero-grain {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: 0.06;
+    mix-blend-mode: overlay;
   }
   .text-gradient-gold {
     background: linear-gradient(
@@ -250,27 +281,6 @@
   .float-slow {
     animation: float-slow 7s ease-in-out infinite;
   }
-  /* Alternating section surface — a hint of brand blue rather than flat grey */
-  .section-muted {
-    background: linear-gradient(
-      180deg,
-      oklch(0.421 0.089 247 / 6%) 0%,
-      oklch(0.421 0.089 247 / 2.5%) 55%,
-      transparent 100%
-    );
-  }
-  .dark .section-muted {
-    background: linear-gradient(
-      180deg,
-      oklch(1 0 0 / 5%) 0%,
-      oklch(1 0 0 / 2%) 55%,
-      transparent 100%
-    );
-  }
-  .dash-flow {
-    stroke-dasharray: 6 8;
-    animation: dash-flow 1.6s linear infinite;
-  }
 }
 
 @keyframes aurora-drift {
@@ -301,17 +311,10 @@
   }
 }
 
-@keyframes dash-flow {
-  to {
-    stroke-dashoffset: -28;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .hero-aurora,
   .marquee-track,
-  .float-slow,
-  .dash-flow {
+  .float-slow {
     animation: none !important;
   }
 }

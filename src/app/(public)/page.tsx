@@ -25,15 +25,18 @@ import {
   Zap,
 } from "lucide-react";
 import { CountUp } from "@/components/marketing/count-up";
+import { HeroMap } from "@/components/marketing/hero-map";
 import { HeroTrackingForm } from "@/components/marketing/hero-tracking-form";
 import { LogoMarquee } from "@/components/marketing/logo-marquee";
 import { Reveal } from "@/components/marketing/reveal";
 import { SectionHeader } from "@/components/marketing/section-header";
 import { TestimonialsCarousel } from "@/components/marketing/testimonials-carousel";
+import { Tilt } from "@/components/marketing/tilt";
 import { TrackingGallery } from "@/components/marketing/tracking-gallery";
 import { TrackingPreview } from "@/components/marketing/tracking-preview";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { getIndonesiaMapData } from "@/lib/indonesia-map-data";
 import { getServiceImage } from "@/lib/site-media";
 import { getTrackingPhotos } from "@/lib/tracking-media";
 import { getPublicHomeContent } from "@/services/public-site.service";
@@ -69,6 +72,7 @@ const TRACKING_HIGHLIGHTS = [
 
 export default async function HomePage() {
   const content = await getPublicHomeContent();
+  const heroMap = getIndonesiaMapData();
   const trackingPhotos = getTrackingPhotos();
 
   // Highlight the last word of the headline in brand gold.
@@ -82,9 +86,11 @@ export default async function HomePage() {
       <section className="relative overflow-hidden">
         <div className="hero-gradient absolute inset-0" />
         <div className="hero-aurora absolute inset-0" />
-        <div className="grid-fade absolute inset-0" />
+        <div className="hero-depth absolute inset-0" />
+        <div className="hero-contours absolute inset-0" />
+        <div className="hero-grain pointer-events-none absolute inset-0" />
 
-        <div className="relative mx-auto max-w-7xl px-4 pt-20 pb-32 md:px-6 md:pt-28 md:pb-40 lg:px-8">
+        <div className="relative mx-auto max-w-7xl px-4 pt-20 pb-32 md:px-6 md:pt-28 md:pb-40 lg:px-8 lg:pt-2">
           <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr]">
             <div>
               <span className="inline-flex items-center gap-2.5 rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-widest text-gold backdrop-blur-sm">
@@ -143,39 +149,47 @@ export default async function HomePage() {
               </ul>
             </div>
 
-            <div>
-              <HeroTrackingForm />
-
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                {content.stats.map((stat) => {
-                  const StatIcon =
-                    statIconMap[stat.icon as keyof typeof statIconMap] ?? Truck;
-                  return (
-                    <div
-                      key={stat.label}
-                      className="group rounded-xl border border-white/15 bg-white/10 p-5 text-white shadow-lg shadow-black/10 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-white/30 hover:bg-white/15"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="flex size-9 items-center justify-center rounded-lg bg-gold/15 text-gold ring-1 ring-gold/25 transition-transform duration-300 group-hover:scale-110">
-                          <StatIcon className="size-4" />
-                        </span>
-                        <CountUp
-                          value={stat.value}
-                          className="font-heading text-3xl font-bold text-gold"
-                        />
-                      </div>
-                      <p className="mt-2 text-sm text-white/75">{stat.label}</p>
-                    </div>
-                  );
-                })}
+            <div className="relative">
+              <div className="relative hidden lg:-mb-10 lg:block">
+                <div className="absolute inset-[14%] rounded-full bg-sky-400/25 blur-3xl" />
+                <div className="relative">
+                  <HeroMap map={heroMap} />
+                </div>
               </div>
+
+              <Tilt className="relative lg:-mt-28 lg:px-6">
+                <HeroTrackingForm />
+              </Tilt>
             </div>
+          </div>
+
+          <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {content.stats.map((stat) => {
+              const StatIcon =
+                statIconMap[stat.icon as keyof typeof statIconMap] ?? Truck;
+              return (
+                <Tilt key={stat.label} max={10}>
+                  <div className="group h-full rounded-xl border border-white/15 bg-white/10 p-5 text-white shadow-xl shadow-black/15 backdrop-blur-md transition-colors duration-300 hover:border-white/30 hover:bg-white/15">
+                    <div className="flex items-center gap-3">
+                      <span className="flex size-9 items-center justify-center rounded-lg bg-gold/15 text-gold ring-1 ring-gold/25 transition-transform duration-300 group-hover:scale-110">
+                        <StatIcon className="size-4" />
+                      </span>
+                      <CountUp
+                        value={stat.value}
+                        className="font-heading text-3xl font-bold text-gold"
+                      />
+                    </div>
+                    <p className="mt-2 text-sm text-white/75">{stat.label}</p>
+                  </div>
+                </Tilt>
+              );
+            })}
           </div>
         </div>
 
         {/* Soft transition into the next section */}
         <div
-          className="pointer-events-none absolute inset-x-0 bottom-0 text-background"
+          className="pointer-events-none absolute inset-x-0 -bottom-px text-background"
           aria-hidden
         >
           <svg
@@ -202,17 +216,21 @@ export default async function HomePage() {
             />
           </Reveal>
 
-          <div className="mt-14 flex flex-wrap justify-center gap-6">
+          {/* Four services sit in one row; otherwise fall back to three
+              columns so no card is left alone on the last row. */}
+          <div
+            className={`mt-14 grid gap-6 sm:grid-cols-2 ${
+              content.offerings.length % 4 === 0
+                ? "lg:grid-cols-4"
+                : "lg:grid-cols-3"
+            }`}
+          >
             {content.offerings.map((service, index) => {
               const Icon =
                 iconMap[service.icon as keyof typeof iconMap] ?? Truck;
               const photo = getServiceImage(service.slug, service.icon);
               return (
-                <Reveal
-                  key={service.slug}
-                  delay={index * 0.06}
-                  className="basis-full sm:basis-[calc(50%-0.75rem)] lg:basis-[calc(33.333%-1rem)]"
-                >
+                <Reveal key={service.slug} delay={index * 0.06}>
                   <Card className="card-glow group h-full border-border/60 py-0 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-primary/10">
                     {photo && (
                       <div className="relative aspect-16/9 overflow-hidden">
@@ -227,7 +245,7 @@ export default async function HomePage() {
                         <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                       </div>
                     )}
-                    <CardContent className="flex h-full flex-col p-6">
+                    <CardContent className="flex flex-1 flex-col p-6">
                       <div className="flex items-start justify-between">
                         <span className="flex size-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-gold/25 text-primary shadow-sm ring-1 ring-primary/10 transition-all duration-300 group-hover:scale-110 group-hover:from-primary group-hover:to-primary/80 group-hover:text-primary-foreground group-hover:ring-primary/30">
                           <Icon className="size-6" />
@@ -260,7 +278,7 @@ export default async function HomePage() {
 
                       <Link
                         href="/services"
-                        className="mt-auto inline-flex items-center gap-1.5 pt-6 text-sm font-semibold text-primary transition-colors hover:text-secondary"
+                        className="mt-auto inline-flex items-center gap-1.5 pt-5 text-sm font-semibold text-primary transition-colors hover:text-secondary"
                       >
                         Selengkapnya
                         <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
@@ -309,10 +327,14 @@ export default async function HomePage() {
       </section>
 
       {/* ── How it works ─────────────────────────────────────── */}
-      <section className="section-muted border-t border-border/50 py-20 md:py-24">
-        <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
+      <section className="section-navy relative overflow-hidden py-20 text-white md:py-24">
+        <div className="hero-contours absolute inset-0 opacity-70" />
+        <div className="hero-grain pointer-events-none absolute inset-0" />
+
+        <div className="relative mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
           <Reveal>
             <SectionHeader
+              tone="inverted"
               eyebrow="Alur Kerja"
               title="Bagaimana Kami Bekerja"
               description="Empat langkah sederhana, dari permintaan penawaran hingga barang diterima di tujuan."
@@ -320,46 +342,32 @@ export default async function HomePage() {
           </Reveal>
 
           <div className="relative mt-14">
-            <div
-              className="pointer-events-none absolute inset-x-0 top-7 hidden lg:block"
-              aria-hidden
-            >
-              <svg
-                viewBox="0 0 100 2"
-                preserveAspectRatio="none"
-                className="h-0.5 w-full text-border"
-              >
-                <line
-                  x1="10"
-                  y1="1"
-                  x2="90"
-                  y2="1"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  className="dash-flow"
-                />
-              </svg>
-            </div>
-
-            <ol className="relative grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+            <ol className="relative grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {content.processSteps.map((step, index) => {
                 const StepIcon =
                   stepIconMap[step.icon as keyof typeof stepIconMap] ??
                   ClipboardList;
                 return (
                   <li key={step.title}>
-                    <Reveal delay={index * 0.08}>
-                      <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
-                        <span className="relative flex size-14 items-center justify-center rounded-2xl bg-card text-primary shadow-md ring-1 ring-border">
-                          <StepIcon className="size-6" />
-                          <span className="absolute -top-2 -right-2 flex size-6 items-center justify-center rounded-full bg-secondary font-mono text-[11px] font-bold text-secondary-foreground shadow-sm">
-                            {index + 1}
-                          </span>
+                    <Reveal delay={index * 0.08} className="h-full">
+                      <div className="group relative flex h-full flex-col items-center overflow-hidden rounded-2xl border border-white/10 bg-white/[0.06] p-6 text-center backdrop-blur-sm transition-colors duration-300 hover:border-gold/40 hover:bg-white/10 lg:items-start lg:text-left">
+                        {/* Oversized step number as a watermark */}
+                        <span
+                          className="pointer-events-none absolute -right-2 -bottom-6 font-heading text-[7rem] leading-none font-bold text-white/[0.05] select-none"
+                          aria-hidden
+                        >
+                          {String(index + 1).padStart(2, "0")}
                         </span>
-                        <h3 className="mt-5 font-heading text-base font-semibold">
+                        <span className="relative flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-gold to-gold-dark text-white shadow-lg shadow-gold/30 ring-4 ring-white/10 transition-transform duration-300 group-hover:scale-110">
+                          <StepIcon className="size-6" />
+                        </span>
+                        <p className="mt-5 font-mono text-xs font-semibold tracking-widest text-gold">
+                          LANGKAH {index + 1}
+                        </p>
+                        <h3 className="mt-1 font-heading text-base font-semibold text-white">
                           {step.title}
                         </h3>
-                        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                        <p className="relative mt-2 text-sm leading-relaxed text-white/70">
                           {step.description}
                         </p>
                       </div>
@@ -373,8 +381,8 @@ export default async function HomePage() {
       </section>
 
       {/* ── Tracking showcase ────────────────────────────────── */}
-      <section className="py-20 md:py-24">
-        <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
+      <section className="section-tint relative overflow-hidden py-20 md:py-24">
+        <div className="relative mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
           <div className="grid items-center gap-12 lg:grid-cols-2">
             <Reveal>
               <SectionHeader
@@ -407,8 +415,18 @@ export default async function HomePage() {
               </Button>
             </Reveal>
 
-            <Reveal delay={0.12}>
-              <TrackingPreview />
+            <Reveal delay={0.12} className="relative">
+              {/* Blurred colour blobs so the mock card floats above the page */}
+              <div
+                className="pointer-events-none absolute -inset-8 -z-0"
+                aria-hidden
+              >
+                <div className="absolute top-0 right-4 size-64 rounded-full bg-primary/25 blur-3xl" />
+                <div className="absolute bottom-0 left-4 size-56 rounded-full bg-gold/25 blur-3xl" />
+              </div>
+              <div className="relative">
+                <TrackingPreview />
+              </div>
             </Reveal>
           </div>
 
@@ -494,11 +512,21 @@ export default async function HomePage() {
 
       {/* ── Testimonials ─────────────────────────────────────── */}
       {content.testimonials.length > 0 && (
-        <section className="section-muted relative overflow-hidden border-t border-border/50 py-20 md:py-24">
-          <div className="absolute top-10 left-1/2 size-[36rem] -translate-x-1/2 rounded-full bg-gold/8 blur-3xl" />
+        <section className="section-navy relative overflow-hidden py-20 md:py-24">
+          <div className="hero-grain pointer-events-none absolute inset-0" />
+          {/* Giant gold quote mark behind the carousel */}
+          <svg
+            viewBox="0 0 24 24"
+            className="pointer-events-none absolute top-24 left-1/2 size-[22rem] -translate-x-1/2 text-gold/10"
+            fill="currentColor"
+            aria-hidden
+          >
+            <path d="M9.6 5C6 6.4 3.5 9.5 3.5 13.4V19h6.2v-6.2H6.6c0-2.2 1.4-4.1 3.7-5.1L9.6 5Zm10.4 0c-3.6 1.4-6.1 4.5-6.1 8.4V19h6.2v-6.2H17c0-2.2 1.4-4.1 3.7-5.1L20 5Z" />
+          </svg>
           <div className="relative mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
             <Reveal>
               <SectionHeader
+                tone="inverted"
                 eyebrow="Testimoni"
                 title="Apa Kata Klien Kami"
                 description="Dipercaya oleh perusahaan di seluruh Indonesia."

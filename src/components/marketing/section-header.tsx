@@ -5,6 +5,8 @@ interface SectionHeaderProps {
   title: string;
   description?: string;
   align?: "left" | "center";
+  /** "inverted" is for headers placed on dark (navy) sections. */
+  tone?: "default" | "inverted";
   className?: string;
 }
 
@@ -13,6 +15,7 @@ export function SectionHeader({
   title,
   description,
   align = "center",
+  tone = "default",
   className,
 }: SectionHeaderProps) {
   return (
@@ -28,11 +31,21 @@ export function SectionHeader({
           {eyebrow}
         </p>
       )}
-      <h2 className="font-heading mt-2 text-3xl font-bold tracking-tight md:text-4xl">
+      <h2
+        className={cn(
+          "font-heading mt-2 text-3xl font-bold tracking-tight md:text-4xl",
+          tone === "inverted" && "text-white",
+        )}
+      >
         {title}
       </h2>
       {description && (
-        <p className="mt-3 text-base text-muted-foreground md:text-lg">
+        <p
+          className={cn(
+            "mt-3 text-base md:text-lg",
+            tone === "inverted" ? "text-white/75" : "text-muted-foreground",
+          )}
+        >
           {description}
         </p>
       )}

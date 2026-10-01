@@ -35,7 +35,8 @@ export function CountUp({
     let frame = 0;
     const start = performance.now();
     const tick = (now: number) => {
-      const progress = Math.min((now - start) / duration, 1);
+      // rAF timestamps can predate `start`, which would count below zero.
+      const progress = Math.min(Math.max((now - start) / duration, 0), 1);
       // easeOutExpo — fast start, gentle landing
       const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
       setCurrent(Math.round(eased * parsed.target));
