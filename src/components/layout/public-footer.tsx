@@ -21,13 +21,11 @@ export async function PublicFooter() {
       <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-gold-dark via-gold to-gold-dark" />
       <div className="hero-contours absolute inset-0 opacity-50" />
       <div className="hero-grain pointer-events-none absolute inset-0" />
-      {/* Oversized wordmark watermark */}
-      <span
-        className="pointer-events-none absolute -bottom-10 left-1/2 -translate-x-1/2 font-heading text-[14rem] leading-none font-bold tracking-tighter text-white/[0.04] select-none md:text-[20rem]"
+      {/* Dot-matrix Indonesia (public/indonesia-dots.svg) echoing the hero map */}
+      <div
+        className="pointer-events-none absolute right-[-6%] bottom-6 aspect-[1200/460] w-[90%] bg-[url(/indonesia-dots.svg)] bg-contain bg-no-repeat opacity-[0.08] md:w-[70%]"
         aria-hidden
-      >
-        IDM
-      </span>
+      />
 
       <div className="relative mx-auto max-w-7xl px-4 pt-16 pb-8 md:px-6 lg:px-8">
         <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">

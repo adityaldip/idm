@@ -23,6 +23,7 @@ export default async function NewsPage() {
         title="Berita & Update"
         description="Informasi terbaru seputar layanan logistik dan kegiatan perusahaan."
         image={PAGE_HERO_IMAGES.berita}
+        breadcrumb="Berita"
       />
 
       <div className="mx-auto max-w-7xl px-4 py-16 md:px-6 md:py-20 lg:px-8">

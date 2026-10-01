@@ -68,10 +68,6 @@ export function HeroMap({ map }: { map: IndonesiaMapData }) {
             <pattern id="hero-map-dots" width="14" height="14" patternUnits="userSpaceOnUse">
               <circle cx="1.5" cy="1.5" r="1.1" fill="oklch(1 0 0 / 10%)" />
             </pattern>
-            <linearGradient id="hero-map-land" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="oklch(0.62 0.1 240)" />
-              <stop offset="100%" stopColor="oklch(0.44 0.09 250)" />
-            </linearGradient>
             <filter id="hero-map-glow" x="-50%" y="-50%" width="200%" height="200%">
               <feGaussianBlur stdDeviation="4" />
             </filter>
@@ -89,19 +85,9 @@ export function HeroMap({ map }: { map: IndonesiaMapData }) {
           />
           <rect x={-60} y={-40} width={width + 120} height={height + 80} rx={28} fill="url(#hero-map-dots)" />
 
-          {map.neighbours.map((d, i) => (
-            <path key={i} d={d} fill="oklch(0.5 0.04 250 / 35%)" />
-          ))}
-
-          {/* Extruded land: a darker copy offset downward reads as thickness */}
-          <path d={map.indonesia} fill="oklch(0.22 0.06 255)" transform="translate(0 9)" />
-          <path d={map.indonesia} fill="oklch(0.3 0.07 252)" transform="translate(0 5)" />
-          <path
-            d={map.indonesia}
-            fill="url(#hero-map-land)"
-            stroke="oklch(0.85 0.06 230 / 70%)"
-            strokeWidth={0.8}
-          />
+          {/* Land (with neighbours and the extrusion) is a static, cached file
+              in the same coordinate space — see src/lib/indonesia-map-data.ts. */}
+          <image href={map.landUrl} x={0} y={0} width={width} height={height} />
 
           {map.cities.map((city, i) => {
             const d = routePath(hub, city);

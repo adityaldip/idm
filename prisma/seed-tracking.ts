@@ -1,6 +1,7 @@
 /**
- * Tracking test data: one shipment per status, plus PO-number lookups
- * (a unique PO and a PO shared by two shipments). Run after the main seed:
+ * Tracking test data: one shipment per status, PO-number lookups (a unique
+ * PO and a PO shared by two shipments), and shipments with a driver/vehicle
+ * and proof photos. Run after the main seed:
  *
  *   pnpm db:seed:tracking
  *
@@ -21,6 +22,8 @@ type Step = {
   description: string;
   branch: "SMG" | "BKS";
   hoursAgo: number;
+  /** Proof photos, as files under public/images/tracking. */
+  photos?: string[];
 };
 
 type TestShipment = {
@@ -40,7 +43,59 @@ type TestShipment = {
   etaDays: number;
   history: Step[];
   delivered?: boolean;
+  /** Assign the demo driver and vehicle from the main seed. */
+  withDriver?: boolean;
 };
+
+/**
+ * Admin-defined statuses for sea freight, as configured in the settings page.
+ * Codes match what the settings page derives from the label (toStatusCode).
+ * Ordered after the built-in ones and "allowFromAny" like the real setup.
+ */
+const CUSTOM_STATUSES = [
+  { code: "LOKASI_MUAT", label: "Lokasi Muat", color: "slate", sortOrder: 10 },
+  { code: "PELABUHAN_AWAL", label: "Pelabuhan Awal", color: "sky", sortOrder: 11 },
+  {
+    code: "SAMPAI_DI_PELABUHAN_TUJUAN",
+    label: "Sampai di pelabuhan tujuan",
+    color: "indigo",
+    sortOrder: 12,
+  },
+  { code: "MENUJU_KOTA", label: "Menuju kota", color: "violet", sortOrder: 13 },
+];
+
+const lokasiMuat = (h: number): Step => ({
+  status: "LOKASI_MUAT",
+  location: "Kawasan Industri Wijayakusuma, Semarang",
+  description: "Barang dimuat ke kontainer di lokasi pengirim",
+  branch: "SMG",
+  hoursAgo: h,
+});
+const pelabuhanAwal = (h: number): Step => ({
+  status: "PELABUHAN_AWAL",
+  location: "Pelabuhan Tanjung Emas, Semarang",
+  description: "Kontainer tiba di pelabuhan asal, menunggu jadwal kapal",
+  branch: "SMG",
+  hoursAgo: h,
+});
+const sampaiPelabuhanTujuan = (h: number): Step => ({
+  status: "SAMPAI_DI_PELABUHAN_TUJUAN",
+  location: "Pelabuhan Tanjung Priok, Jakarta",
+  description: "Kapal sandar, kontainer dibongkar di pelabuhan tujuan",
+  branch: "BKS",
+  hoursAgo: h,
+});
+const menujuKota = (h: number): Step => ({
+  status: "MENUJU_KOTA",
+  location: "Tol Jakarta–Cikampek",
+  description: "Kontainer dibawa truk dari pelabuhan menuju kota tujuan",
+  branch: "BKS",
+  hoursAgo: h,
+});
+
+// Photos shipped with the repo, reused as proof-of-handling images.
+const PHOTO_SIZE = { width: 1200, height: 900 };
+const photo = (file: string) => `/images/tracking/${file}`;
 
 // Shared opening steps for a Semarang → Bekasi road shipment.
 const created = (h: number): Step => ({
@@ -140,6 +195,7 @@ const SHIPMENTS: TestShipment[] = [
     description: "Rangka baja proyek gudang (batch 1)",
     cost: 9800000,
     etaDays: 0,
+    withDriver: true,
     history: [
       created(52),
       pickedUp(48),
@@ -228,6 +284,90 @@ const SHIPMENTS: TestShipment[] = [
       },
     ],
   },
+  {
+    trackingNumber: "IDM2026000009",
+    poNumber: "PO-2026-0612",
+    service: "domestic-distribution",
+    senderName: "PT Sinar Elektrik",
+    senderCity: "Semarang",
+    recipientName: "PT Graha Retail",
+    recipientCity: "Bekasi",
+    recipientAddress: "Jl. Ir. H. Juanda No. 140",
+    weight: 85,
+    packageCount: 4,
+    description: "Panel listrik dan aksesoris",
+    cost: 780000,
+    etaDays: -1,
+    delivered: true,
+    withDriver: true,
+    history: [
+      created(60),
+      {
+        ...pickedUp(56),
+        description: "Paket dijemput, dicek kondisi, dan dimuat ke armada",
+        photos: [photo("01-penjemputan.jpg")],
+      },
+      {
+        ...inWarehouse(50),
+        description: "Paket disortir dan dikemas ulang di gudang",
+        photos: [photo("02-gudang.jpg")],
+      },
+      { ...inTransit(34), photos: [photo("03-perjalanan.jpg")] },
+      outForDelivery(22),
+      {
+        status: "DELIVERED",
+        location: "Jl. Ir. H. Juanda No. 140, Bekasi",
+        description: "Diterima oleh Ibu Sari (bagian gudang), 4 koli lengkap",
+        branch: "BKS",
+        hoursAgo: 20,
+        photos: [photo("04-serah-terima.jpg"), photo("01-penjemputan.jpg")],
+      },
+    ],
+  },
+  {
+    // Long custom sea-freight journey: more steps than the stepper shows,
+    // so the middle folds into "+N tahap lain".
+    trackingNumber: "IDM2026000010",
+    poNumber: "PO-2026-0700",
+    service: "ocean-freight",
+    senderName: "PT Keramik Nusantara",
+    senderCity: "Semarang",
+    recipientName: "PT Bangun Persada",
+    recipientCity: "Bekasi",
+    recipientAddress: "Jl. Industri Selatan 5 Blok GG-2, Cikarang",
+    weight: 12500,
+    packageCount: 40,
+    description: "Keramik lantai, 1 kontainer 20 ft",
+    cost: 18500000,
+    etaDays: 1,
+    withDriver: true,
+    history: [
+      created(150),
+      lokasiMuat(140),
+      pickedUp(132),
+      inWarehouse(120),
+      { ...pelabuhanAwal(96), photos: [photo("03-perjalanan.jpg")] },
+      { ...inTransit(70), location: "Laut Jawa (KM Nusantara Jaya)", description: "Kontainer dalam pelayaran ke pelabuhan tujuan" },
+      sampaiPelabuhanTujuan(30),
+      menujuKota(3),
+    ],
+  },
+  {
+    // Short custom journey: custom labels without folding.
+    trackingNumber: "IDM2026000011",
+    service: "ocean-freight",
+    senderName: "CV Mebel Kudus",
+    senderCity: "Semarang",
+    recipientName: "Toko Furnitur Sentosa",
+    recipientCity: "Bekasi",
+    recipientAddress: "Jl. Kalimalang No. 21",
+    weight: 950,
+    packageCount: 8,
+    description: "Lemari dan meja kayu",
+    cost: 3200000,
+    etaDays: 5,
+    history: [created(30), lokasiMuat(24), pelabuhanAwal(6)],
+  },
 ];
 
 async function main() {
@@ -237,13 +377,24 @@ async function main() {
 
   console.log("🚚 Seeding tracking test shipments...");
 
-  const [smg, bks, customer, admin, statuses, services] = await Promise.all([
+  // update: {} keeps any edits an admin made to these statuses.
+  for (const status of CUSTOM_STATUSES) {
+    await prisma.shipmentStatusDef.upsert({
+      where: { code: status.code },
+      update: {},
+      create: { ...status, allowFromAny: true },
+    });
+  }
+
+  const [smg, bks, customer, admin, statuses, services, driver, vehicle] = await Promise.all([
     prisma.branch.findUnique({ where: { code: "BR-SMG-01" } }),
     prisma.branch.findUnique({ where: { code: "BR-BKS-01" } }),
     prisma.customer.findUnique({ where: { code: "CUS-00001" } }),
     prisma.user.findUnique({ where: { email: "admin@ptintandayamandiri.co.id" } }),
     prisma.shipmentStatusDef.findMany(),
     prisma.serviceOffering.findMany(),
+    prisma.driver.findUnique({ where: { code: "DRV-001" } }),
+    prisma.vehicle.findUnique({ where: { plateNumber: "B 1234 IDM" } }),
   ]);
   if (!smg || !bks || !customer || !admin) {
     throw new Error("Run the main seed first (pnpm db:seed).");
@@ -286,6 +437,8 @@ async function main() {
       currentLocation: last.location,
       estimatedDelivery: new Date(Date.now() + s.etaDays * 24 * HOUR),
       actualDelivery: s.delivered ? hoursAgo(last.hoursAgo) : null,
+      driverId: s.withDriver ? (driver?.id ?? null) : null,
+      vehicleId: s.withDriver ? (vehicle?.id ?? null) : null,
       createdAt: hoursAgo(s.history[0].hoursAgo),
     };
 
@@ -295,19 +448,30 @@ async function main() {
       create: { trackingNumber: s.trackingNumber, createdById: admin.id, ...data },
     });
 
+    // Photos cascade with their history rows, so a rebuild clears them too.
     await prisma.$transaction([
       prisma.trackingHistory.deleteMany({ where: { shipmentId: shipment.id } }),
-      prisma.trackingHistory.createMany({
-        data: s.history.map((step) => ({
-          shipmentId: shipment.id,
-          statusId: statusId(step.status),
-          location: step.location,
-          description: step.description,
-          branchId: branchId[step.branch],
-          updatedById: admin.id,
-          timestamp: hoursAgo(step.hoursAgo),
-        })),
-      }),
+      ...s.history.map((step) =>
+        prisma.trackingHistory.create({
+          data: {
+            shipmentId: shipment.id,
+            statusId: statusId(step.status),
+            location: step.location,
+            description: step.description,
+            branchId: branchId[step.branch],
+            updatedById: admin.id,
+            timestamp: hoursAgo(step.hoursAgo),
+            photos: step.photos && {
+              create: step.photos.map((url, sortOrder) => ({
+                url,
+                sortOrder,
+                sizeBytes: 0,
+                ...PHOTO_SIZE,
+              })),
+            },
+          },
+        }),
+      ),
     ]);
 
     console.log(
@@ -317,6 +481,7 @@ async function main() {
 
   console.log("✅ Tracking test data ready.");
   console.log("   Try PO lookup: PO-2026-0451 (1 match), PO-2026-0500 (2 matches)");
+  console.log("   Driver + photos: IDM2026000009 (IDM2026000005 also has a driver)");
 }
 
 main()

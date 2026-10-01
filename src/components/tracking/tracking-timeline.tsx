@@ -1,13 +1,17 @@
 "use client";
 
 import { format } from "date-fns";
+import { id as localeId } from "date-fns/locale";
 import { motion } from "framer-motion";
+import { MapPin } from "lucide-react";
 import type { StatusOption } from "@/lib/status-option";
+import { statusColorClass, statusSolidClass } from "@/lib/shipment-status";
 import { cn } from "@/lib/utils";
 import {
   TrackingPhotoGallery,
   type TrackingPhotoView,
 } from "@/components/tracking/tracking-photo-gallery";
+import { StatusIcon } from "./status-icon";
 
 type TimelineEvent = {
   id: string;
@@ -18,51 +22,93 @@ type TimelineEvent = {
   photos?: TrackingPhotoView[];
 };
 
-interface TrackingTimelineProps {
-  events: TimelineEvent[];
-  currentStatus: StatusOption;
-}
+/** Newest event first; the latest one is called out as the current update. */
+export function TrackingTimeline({ events }: { events: TimelineEvent[] }) {
+  const ordered = [...events].reverse();
 
-export function TrackingTimeline({ events, currentStatus }: TrackingTimelineProps) {
   return (
-    <div className="relative space-y-0">
-      {events.map((event, index) => {
-        const isCurrent =
-          event.status.code === currentStatus.code &&
-          index === events.length - 1;
-        const isLast = index === events.length - 1;
+    <ol className="relative">
+      {ordered.map((event, index) => {
+        const isLatest = index === 0;
+        const isLast = index === ordered.length - 1;
 
         return (
-          <motion.div
+          <motion.li
             key={event.id}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: index * 0.1, duration: 0.3 }}
-            className="relative flex gap-4 pb-8"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.06, duration: 0.3 }}
+            className="relative flex gap-4 pb-6"
           >
             {!isLast && (
-              <div className="absolute left-[11px] top-6 h-full w-0.5 bg-border" />
+              <span
+                className="absolute top-10 bottom-0 left-5 w-0.5 -translate-x-1/2 bg-gradient-to-b from-border to-border/40"
+                aria-hidden
+              />
             )}
+
+            <span
+              className={cn(
+                "relative z-10 flex size-10 shrink-0 items-center justify-center rounded-full ring-4 ring-background",
+                isLatest
+                  ? statusSolidClass(event.status.color)
+                  : "bg-muted text-muted-foreground",
+              )}
+            >
+              {isLatest && (
+                <span
+                  className={cn(
+                    "absolute inset-0 animate-ping rounded-full opacity-30",
+                    statusSolidClass(event.status.color),
+                  )}
+                />
+              )}
+              <StatusIcon code={event.status.code} className="relative size-4.5" />
+            </span>
 
             <div
               className={cn(
-                "relative z-10 mt-1 size-6 shrink-0 rounded-full border-2",
-                isCurrent
-                  ? "border-secondary bg-secondary shadow-[0_0_0_4px] shadow-secondary/20"
-                  : "border-primary bg-primary",
+                "flex-1 rounded-xl border bg-card p-4 transition-shadow",
+                isLatest
+                  ? "border-gold/30 shadow-lg shadow-black/5 md:p-5"
+                  : "border-border/60",
               )}
-            />
-
-            <div className="flex-1 rounded-lg border border-border/60 bg-card p-4">
+            >
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="font-medium">{event.status.label}</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span
+                    className={cn(
+                      "rounded-full px-2.5 py-0.5 text-xs font-semibold",
+                      statusColorClass(event.status.color),
+                    )}
+                  >
+                    {event.status.label}
+                  </span>
+                  {isLatest && (
+                    <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-gold-dark dark:text-gold">
+                      Terbaru
+                    </span>
+                  )}
+                </div>
                 <time className="text-xs text-muted-foreground">
-                  {format(event.timestamp, "dd MMM yyyy, HH:mm")}
+                  {format(event.timestamp, "dd MMM yyyy, HH:mm", {
+                    locale: localeId,
+                  })}
                 </time>
               </div>
-              <p className="mt-1 text-sm text-muted-foreground">{event.location}</p>
+              <p className="mt-2 flex items-center gap-1.5 text-sm font-medium">
+                <MapPin className="size-3.5 shrink-0 text-muted-foreground" />
+                {event.location}
+              </p>
               {event.description && (
-                <p className="mt-1 text-sm">{event.description}</p>
+                <p
+                  className={cn(
+                    "mt-1 text-sm",
+                    isLatest ? "text-foreground" : "text-muted-foreground",
+                  )}
+                >
+                  {event.description}
+                </p>
               )}
               {event.photos && event.photos.length > 0 && (
                 <TrackingPhotoGallery
@@ -71,9 +117,9 @@ export function TrackingTimeline({ events, currentStatus }: TrackingTimelineProp
                 />
               )}
             </div>
-          </motion.div>
+          </motion.li>
         );
       })}
-    </div>
+    </ol>
   );
 }

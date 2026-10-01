@@ -22,6 +22,11 @@ export default async function AboutPage() {
         title={content.title}
         description={content.history}
         image={PAGE_HERO_IMAGES.about}
+        breadcrumb="Tentang Kami"
+        actions={[
+          { href: "/services", label: "Lihat Layanan" },
+          { href: "/contact", label: "Hubungi Kami" },
+        ]}
       />
 
       <div className="mx-auto max-w-7xl px-4 py-16 md:px-6 md:py-20 lg:px-8">

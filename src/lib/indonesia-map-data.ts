@@ -1,10 +1,13 @@
-// Projects Indonesia + neighbours from world-atlas on the server so the
-// 50m TopoJSON never ships to the browser; only SVG path strings do.
+// Projects Indonesia + neighbours from world-atlas. The land shapes are baked
+// into a static, browser-cacheable file (public/indonesia-map.svg, written by
+// scripts/generate-hero-map.ts); the page only receives the small city layer.
+// Both use the same projection below, so routes line up with the land.
 import {
   geoMercator,
   geoPath,
   type ExtendedFeature,
   type ExtendedFeatureCollection,
+  type GeoProjection,
 } from "d3-geo";
 import { feature } from "topojson-client";
 import countries50m from "world-atlas/countries-50m.json";
@@ -25,8 +28,8 @@ export interface MapCity {
 export interface IndonesiaMapData {
   width: number;
   height: number;
-  indonesia: string;
-  neighbours: string[];
+  /** URL of the pre-rendered land layer, in the same coordinate space. */
+  landUrl: string;
   hub: { name: string; x: number; y: number };
   cities: MapCity[];
 }
@@ -47,21 +50,17 @@ const CITIES: { id: string; name: string; lng: number; lat: number; mode: RouteM
 
 const WIDTH = 1000;
 const HEIGHT = 440;
+export const INDONESIA_MAP_URL = "/indonesia-map.svg";
 
-let cached: IndonesiaMapData | undefined;
-
-/** Projected map paths are static, so they are computed once per process. */
-export function getIndonesiaMapData(): IndonesiaMapData {
-  cached ??= projectIndonesiaMap();
-  return cached;
-}
-
-function projectIndonesiaMap(): IndonesiaMapData {
+function projectIndonesia(): {
+  projection: GeoProjection;
+  indonesia: ExtendedFeature;
+  neighbours: ExtendedFeature[];
+} {
   const topology = countries50m as unknown as Topology;
   const countries = (topology.objects as Record<string, TopoObject>).countries;
   const all = feature(topology, countries) as unknown as ExtendedFeatureCollection;
-  const byId = (id: string): ExtendedFeature | undefined =>
-    all.features.find((f) => String(f.id) === id);
+  const byId = (id: string) => all.features.find((f) => String(f.id) === id);
 
   const indonesia = byId(INDONESIA)!;
   const projection = geoMercator().fitExtent(
@@ -71,23 +70,73 @@ function projectIndonesiaMap(): IndonesiaMapData {
     ],
     indonesia,
   );
-  const path = geoPath(projection);
+  const neighbours = NEIGHBOURS.map(byId).filter(
+    (f): f is ExtendedFeature => Boolean(f),
+  );
+  return { projection, indonesia, neighbours };
+}
+
+let cached: IndonesiaMapData | undefined;
+
+/** City/hub positions for the hero; computed once per process. */
+export function getIndonesiaMapData(): IndonesiaMapData {
+  if (cached) return cached;
+  const { projection } = projectIndonesia();
   const project = (lng: number, lat: number) => {
     const [x, y] = projection([lng, lat])!;
     return { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10 };
   };
-
-  return {
+  cached = {
     width: WIDTH,
     height: HEIGHT,
-    indonesia: path(indonesia) ?? "",
-    neighbours: NEIGHBOURS.map(byId)
-      .filter((f): f is ExtendedFeature => Boolean(f))
-      .map((f) => path(f) ?? ""),
+    landUrl: INDONESIA_MAP_URL,
     hub: { name: "Jakarta", ...project(106.85, -6.2) },
     cities: CITIES.map(({ lng, lat, ...city }) => ({
       ...city,
       ...project(lng, lat),
     })),
   };
+  return cached;
+}
+
+// Islands smaller than this (in pxÂ² of the 1000Ã—440 canvas) are sub-pixel
+// specks at hero size â€” dropping them roughly halves the file.
+const MIN_ISLAND_AREA = 4;
+
+/** Splits a (Multi)Polygon into its islands and keeps the visible ones. */
+function withoutSpecks(
+  f: ExtendedFeature,
+  path: ReturnType<typeof geoPath>,
+): ExtendedFeature {
+  const geometry = f.geometry;
+  if (!geometry || geometry.type !== "MultiPolygon") return f;
+  const kept = geometry.coordinates.filter(
+    (polygon) =>
+      path.area({ type: "Polygon", coordinates: polygon }) >= MIN_ISLAND_AREA,
+  );
+  return { ...f, geometry: { type: "MultiPolygon", coordinates: kept } };
+}
+
+/** The static land layer, written to public/ by scripts/generate-hero-map.ts. */
+export function renderIndonesiaMapSvg(): string {
+  const { projection, indonesia, neighbours } = projectIndonesia();
+  // Whole units are ~0.8px at hero size, invisible for these shapes.
+  const path = geoPath(projection).digits(0);
+  const land = path(withoutSpecks(indonesia, path)) ?? "";
+  const others = neighbours
+    .map((f) => path(withoutSpecks(f, path)) ?? "")
+    .map((d) => `<path d="${d}"/>`)
+    .join("");
+
+  return [
+    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${WIDTH} ${HEIGHT}">`,
+    `<defs><linearGradient id="land" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4a8cc4"/><stop offset="1" stop-color="#2a5a8f"/></linearGradient>`,
+    `<path id="idn" d="${land}"/></defs>`,
+    `<g fill="#5a708c" fill-opacity=".35">${others}</g>`,
+    // A darker copy offset downward reads as thickness (2.5D extrusion).
+    `<use href="#idn" xlink:href="#idn" fill="#0f2340" transform="translate(0 9)"/>`,
+    `<use href="#idn" xlink:href="#idn" fill="#1b3a5f" transform="translate(0 5)"/>`,
+    `<use href="#idn" xlink:href="#idn" fill="url(#land)" stroke="#b0d7f0" stroke-opacity=".7" stroke-width=".8"/>`,
+    `</svg>`,
+  ].join("");
 }

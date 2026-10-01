@@ -39,6 +39,16 @@ export default async function ContactPage() {
         title="Kontak Kami"
         description="Butuh bantuan? Kirim pesan melalui formulir di bawah atau hubungi kantor kami langsung."
         image={PAGE_HERO_IMAGES.contact}
+        breadcrumb="Kontak"
+        actions={[
+          { href: `tel:${branding.phoneHref}`, label: "Telepon Kami", icon: Phone },
+          { href: `mailto:${branding.email}`, label: "Kirim Email", icon: Mail },
+        ]}
+        facts={[
+          { icon: Phone, label: "Telepon", value: branding.phone },
+          { icon: Mail, label: "Email", value: branding.email },
+          { icon: Clock, label: "Jam operasional", value: branding.hours ?? COMPANY.hours },
+        ]}
       />
 
       <div className="mx-auto max-w-7xl px-4 py-16 md:px-6 md:py-20 lg:px-8">
