@@ -3,7 +3,30 @@
 set -euo pipefail
 
 cd ~/repositories/idm
+# cPanel nodevenv activate references CL_VIRTUAL_ENV; tolerate unbound under set -u
+set +u
 source ~/nodevenv/repositories/idm/20/bin/activate
+set -u
+
+# Check the upload BEFORE touching the running app — otherwise a missing or
+# truncated zip leaves the site down with no .next to serve.
+if [ ! -f next-build.zip ]; then
+  echo "ERROR: next-build.zip not found in $(pwd)"
+  echo "Upload it via cPanel File Manager first. The running site was not touched."
+  exit 1
+fi
+
+if ! unzip -tq next-build.zip > /dev/null; then
+  echo "ERROR: next-build.zip is corrupt or incomplete (upload interrupted?)."
+  echo "Re-upload it. The running site was not touched."
+  exit 1
+fi
+
+if ! unzip -l next-build.zip .next/BUILD_ID > /dev/null 2>&1; then
+  echo "ERROR: next-build.zip has no .next/BUILD_ID — wrong file?"
+  echo "The running site was not touched."
+  exit 1
+fi
 
 echo "=== Stopping stale Node processes ==="
 pkill -9 -u "$(whoami)" node 2>/dev/null || true
@@ -11,12 +34,6 @@ sleep 2
 
 echo "=== Removing old .next (required — do not skip) ==="
 rm -rf .next
-
-if [ ! -f next-build.zip ]; then
-  echo "ERROR: next-build.zip not found in $(pwd)"
-  echo "Upload it via cPanel File Manager first."
-  exit 1
-fi
 
 echo "=== Extracting build ==="
 unzip -o next-build.zip
