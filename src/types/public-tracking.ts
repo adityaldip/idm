@@ -8,8 +8,6 @@ export type PublicTrackingData = {
   serviceOffering: { name: string; icon: string | null } | null;
   senderCity: string;
   recipientCity: string;
-  weight: number | null;
-  packageCount: number;
   currentLocation: string | null;
   estimatedDelivery: Date | null;
   actualDelivery: Date | null;

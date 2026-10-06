@@ -58,11 +58,14 @@ export function ShipmentItemsFields({
       ...(row.weightKg.trim() !== "" && { weightKg: Number(row.weightKg) }),
     }));
 
+  // Layout follows the width of the form itself (a container query), not the
+  // viewport: in the narrow side sheet the name gets its own full-width line,
+  // and only a wide form switches to a one-line table row.
   return (
-    <div className="space-y-3">
+    <div className="@container space-y-3">
       <input type="hidden" name="items" value={JSON.stringify(payload)} />
 
-      <div className="hidden gap-3 px-1 text-xs text-muted-foreground sm:grid sm:grid-cols-[1fr_5rem_7rem_6rem_2.25rem]">
+      <div className="hidden gap-3 px-1 text-xs text-muted-foreground @2xl:grid @2xl:grid-cols-[minmax(0,1fr)_5rem_7rem_6rem_2.25rem]">
         <span>Nama Barang</span>
         <span>Qty</span>
         <span>Satuan</span>
@@ -73,10 +76,10 @@ export function ShipmentItemsFields({
       {rows.map((row, index) => (
         <div
           key={index}
-          className="grid gap-3 rounded-lg border border-border/60 p-3 sm:grid-cols-[1fr_5rem_7rem_6rem_2.25rem] sm:items-center sm:rounded-none sm:border-0 sm:p-0"
+          className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_2.25rem] items-end gap-3 rounded-lg border border-border/60 p-3 @2xl:grid-cols-[minmax(0,1fr)_5rem_7rem_6rem_2.25rem] @2xl:items-center @2xl:rounded-none @2xl:border-0 @2xl:p-0"
         >
-          <div>
-            <Label className="sm:hidden" htmlFor={`item-name-${index}`}>
+          <div className="col-span-4 @2xl:col-span-1">
+            <Label className="mb-1.5 @2xl:hidden" htmlFor={`item-name-${index}`}>
               Nama Barang
             </Label>
             <Input
@@ -87,7 +90,7 @@ export function ShipmentItemsFields({
             />
           </div>
           <div>
-            <Label className="sm:hidden" htmlFor={`item-qty-${index}`}>
+            <Label className="mb-1.5 @2xl:hidden" htmlFor={`item-qty-${index}`}>
               Qty
             </Label>
             <Input
@@ -100,7 +103,7 @@ export function ShipmentItemsFields({
             />
           </div>
           <div>
-            <Label className="sm:hidden" htmlFor={`item-unit-${index}`}>
+            <Label className="mb-1.5 @2xl:hidden" htmlFor={`item-unit-${index}`}>
               Satuan
             </Label>
             <select
@@ -119,7 +122,7 @@ export function ShipmentItemsFields({
             </select>
           </div>
           <div>
-            <Label className="sm:hidden" htmlFor={`item-weight-${index}`}>
+            <Label className="mb-1.5 @2xl:hidden" htmlFor={`item-weight-${index}`}>
               Berat (kg)
             </Label>
             <Input

@@ -7,7 +7,6 @@ import {
   MapPin,
   Package,
   UserRound,
-  Weight,
   type LucideIcon,
 } from "lucide-react";
 import { TrackingTimeline } from "@/components/tracking/tracking-timeline";
@@ -84,16 +83,6 @@ export function TrackingResult({ shipment, journey }: TrackingResultProps) {
   if (shipment.currentLocation) {
     details.push({ icon: MapPin, label: "Lokasi Terkini", value: shipment.currentLocation });
   }
-  details.push({
-    icon: Weight,
-    label: "Berat & Koli",
-    value: [
-      shipment.weight != null ? `${shipment.weight.toLocaleString("id-ID")} kg` : null,
-      `${shipment.packageCount} koli`,
-    ]
-      .filter(Boolean)
-      .join(" · "),
-  });
   if (shipment.driver) {
     details.push({ icon: UserRound, label: "Pengemudi", value: shipment.driver.name });
   }

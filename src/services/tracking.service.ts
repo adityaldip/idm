@@ -116,8 +116,6 @@ export async function getPublicTracking(trackingNumber: string) {
       serviceOffering: { select: { name: true, icon: true } },
       senderCity: true,
       recipientCity: true,
-      weight: true,
-      packageCount: true,
       currentLocation: true,
       estimatedDelivery: true,
       actualDelivery: true,
