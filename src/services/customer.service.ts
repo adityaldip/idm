@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { paginationMeta } from "@/lib/validators/common";
 import type { PaginationInput } from "@/lib/validators/common";
@@ -8,9 +8,23 @@ import type {
 } from "@/lib/validators/customer";
 import { logActivity } from "./activity.service";
 
+// Based on the highest existing number, not count(): count() repeats codes
+// once any customer has been deleted.
 async function generateCustomerCode() {
-  const count = await prisma.customer.count();
-  return `CUS-${String(count + 1).padStart(5, "0")}`;
+  const [row] = await prisma.$queryRaw<{ max: number | null }[]>`
+    SELECT MAX(CAST(SUBSTRING(code FROM 5) AS INTEGER)) AS max
+    FROM customers
+    WHERE code ~ '^CUS-[0-9]+$'
+  `;
+  const next = (row?.max ?? 0) + 1;
+  return `CUS-${String(next).padStart(5, "0")}`;
+}
+
+function isUniqueCodeError(error: unknown) {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2002"
+  );
 }
 
 export async function listCustomers(filters: PaginationInput) {
@@ -65,22 +79,31 @@ export async function createCustomer(
   input: CreateCustomerInput,
   userId: string,
 ) {
-  const code = await generateCustomerCode();
-  const customer = await prisma.customer.create({
-    data: {
-      code,
-      name: input.name,
-      email: input.email || null,
-      phone: input.phone,
-      company: input.company,
-      address: input.address,
-      city: input.city,
-      province: input.province,
-      postalCode: input.postalCode,
-      taxId: input.taxId,
-      notes: input.notes,
-    },
-  });
+  // Retry in case two customers are created at the same time and get the same code.
+  let customer;
+  for (let attempt = 1; ; attempt++) {
+    const code = await generateCustomerCode();
+    try {
+      customer = await prisma.customer.create({
+        data: {
+          code,
+          name: input.name,
+          email: input.email || null,
+          phone: input.phone,
+          company: input.company,
+          address: input.address,
+          city: input.city,
+          province: input.province,
+          postalCode: input.postalCode,
+          taxId: input.taxId,
+          notes: input.notes,
+        },
+      });
+      break;
+    } catch (error) {
+      if (!isUniqueCodeError(error) || attempt >= 5) throw error;
+    }
+  }
 
   await logActivity({
     type: "CUSTOMER_CREATED",
