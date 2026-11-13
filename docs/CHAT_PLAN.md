@@ -83,8 +83,8 @@ dijalankan dengan `psql` di server sebelum deploy build.
 
 - Ditampilkan di bawah pesan sambutan sampai pengunjung mengirim pesan pertama.
 - Klik → teks tombol terkirim sebagai pesan `VISITOR`.
-- Daftar tombol diatur di Settings. Tombol bawaan: "Cek status resi",
-  "Tanya tarif", "Jadwal pickup".
+- Daftar tombol diatur di Settings. Tombol bawaan hanya "Cek status resi";
+  tombol lain (mis. "Tanya tarif") bisa ditambah dari Settings.
 
 ### Jawaban otomatis status resi
 

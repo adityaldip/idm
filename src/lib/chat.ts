@@ -49,11 +49,7 @@ export const DEFAULT_CHAT_SETTINGS: ChatSettings = {
   welcomeOffline:
     "Halo {nama}, terima kasih sudah menghubungi PT Intan Daya Mandiri. CS kami sedang offline dan akan membalas pada jam kerja ({jam_kerja}).",
   hours: { days: [1, 2, 3, 4, 5, 6], open: "08:00", close: "17:00" },
-  quickReplies: [
-    { label: "Cek status resi", action: "track" },
-    { label: "Tanya tarif", action: "text" },
-    { label: "Jadwal pickup", action: "text" },
-  ],
+  quickReplies: [{ label: "Cek status resi", action: "track" }],
 };
 
 function parseJson<T>(value: string | undefined, isValid: (v: unknown) => v is T, fallback: T): T {
