@@ -46,8 +46,15 @@ const staticChunks = fs
 
 if (fs.existsSync(outZip)) fs.unlinkSync(outZip);
 
-const paths = includes.map((entry) => path.join(".next", entry));
-execSync(`zip -r "${outZip}" ${paths.map((p) => `"${p}"`).join(" ")}`, {
+// Forward slashes so the zip extracts correctly on the Linux server.
+const paths = includes.map((entry) => `.next/${entry}`);
+const quoted = paths.map((p) => `"${p}"`).join(" ");
+// Windows has no `zip`; its bundled bsdtar writes zip archives with -a.
+const zipCommand =
+  process.platform === "win32"
+    ? `"${path.join(process.env.SystemRoot ?? "C:\\Windows", "System32", "tar.exe")}" -a -c -f "${outZip}" ${quoted}`
+    : `zip -r "${outZip}" ${quoted}`;
+execSync(zipCommand, {
   cwd: root,
   stdio: "inherit",
 });

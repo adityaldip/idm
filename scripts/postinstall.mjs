@@ -3,7 +3,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const schema = path.join(root, "prisma", "schema.prisma");
+// Relative to cwd (root): an absolute path breaks under shell: true when it contains spaces.
+const schema = "prisma/schema.prisma";
 
 if (process.env.SKIP_PRISMA_GENERATE === "1") {
   console.log("Skipping prisma generate (SKIP_PRISMA_GENERATE=1)");

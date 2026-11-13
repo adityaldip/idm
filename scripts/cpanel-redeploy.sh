@@ -3,7 +3,7 @@
 set -euo pipefail
 
 cd ~/repositories/idm
-source ~/nodevenv/repositories/idm/20/bin/activate
+set +u; source ~/nodevenv/repositories/idm/20/bin/activate; set -u
 
 echo "=== Stopping stale Node processes ==="
 pkill -9 -u "$(whoami)" node 2>/dev/null || true
@@ -30,13 +30,6 @@ if [ -f .next/static/chunks/5530-06a54b28eb37c890.js ]; then
   exit 1
 fi
 
-REQUIRED_CHUNK=$(ls .next/static/chunks/5530-*.js 2>/dev/null | head -1 || true)
-if [ -z "$REQUIRED_CHUNK" ]; then
-  echo "ERROR: Missing 5530 chunk in extracted build."
-  exit 1
-fi
-echo "5530 chunk on disk: $(basename "$REQUIRED_CHUNK")"
-
 node scripts/verify-extracted-build.mjs
 
 echo "=== Restarting Passenger (must happen before live checks) ==="
@@ -54,6 +47,5 @@ else
   echo "WARNING: Live site check failed, but files on disk look correct."
   echo "Wait 30s and run: node scripts/check-server-deploy.mjs"
   echo "Expected BUILD_ID: $(cat .next/BUILD_ID)"
-  echo "Expected 5530: $(basename "$REQUIRED_CHUNK")"
   exit 1
 fi
