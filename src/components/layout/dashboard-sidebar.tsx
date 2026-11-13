@@ -10,7 +10,9 @@ import {
   Handshake,
   Inbox,
   LayoutDashboard,
+  MessageCircleMore,
   MessageSquare,
+  MessagesSquare,
   Newspaper,
   Package,
   Route,
@@ -20,6 +22,7 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
+import { ChatUnreadBadge } from "@/components/chat/chat-unread-badge";
 import { Logo } from "@/components/shared/logo";
 import { SignOutButton } from "@/components/layout/sign-out-button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -44,6 +47,8 @@ const iconMap = {
   UserCog,
   Settings,
   Route,
+  MessagesSquare,
+  MessageCircleMore,
 } as const satisfies Record<DashboardNavIcon, LucideIcon>;
 
 function isNavItemActive(pathname: string, href: string) {
@@ -94,6 +99,7 @@ export function DashboardSidebar() {
                     >
                       <Icon className="size-4 shrink-0" />
                       {item.label}
+                      {item.href === "/chat" && <ChatUnreadBadge />}
                     </Link>
                   );
                 })}

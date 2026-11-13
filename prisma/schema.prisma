@@ -77,24 +77,26 @@ enum ActivityType {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  passwordHash  String
-  name          String
-  phone         String?
-  avatarUrl     String?
-  role          Role      @default(OPERATOR)
-  isActive      Boolean   @default(true)
-  branchId      String?
-  branch        Branch?   @relation(fields: [branchId], references: [id])
-  lastLoginAt   DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  phone        String?
+  avatarUrl    String?
+  role         Role      @default(OPERATOR)
+  isActive     Boolean   @default(true)
+  branchId     String?
+  branch       Branch?   @relation(fields: [branchId], references: [id])
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-  createdShipments Shipment[]        @relation("ShipmentCreatedBy")
-  trackingUpdates  TrackingHistory[] @relation("TrackingUpdatedBy")
+  createdShipments Shipment[]         @relation("ShipmentCreatedBy")
+  trackingUpdates  TrackingHistory[]  @relation("TrackingUpdatedBy")
   activities       ActivityLog[]
-  createdNews      News[]            @relation("NewsAuthor")
+  createdNews      News[]             @relation("NewsAuthor")
+  assignedChats    ChatConversation[] @relation("ChatAssignee")
+  chatMessages     ChatMessage[]
 
   @@index([role])
   @@index([branchId])
@@ -118,7 +120,8 @@ model Customer {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  shipments Shipment[]
+  shipments         Shipment[]
+  chatConversations ChatConversation[]
 
   @@index([phone])
   @@index([email])
@@ -126,21 +129,21 @@ model Customer {
 }
 
 model Branch {
-  id               String   @id @default(cuid())
-  code             String   @unique
-  name             String
-  address          String
-  city             String
-  province         String
-  postalCode       String?
-  phone            String
-  email            String?
-  latitude         Float?
-  longitude        Float?
-  isActive         Boolean  @default(true)
-  isHeadquarters   Boolean  @default(false)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id             String   @id @default(cuid())
+  code           String   @unique
+  name           String
+  address        String
+  city           String
+  province       String
+  postalCode     String?
+  phone          String
+  email          String?
+  latitude       Float?
+  longitude      Float?
+  isActive       Boolean  @default(true)
+  isHeadquarters Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   users                User[]
   originShipments      Shipment[]        @relation("OriginBranch")
@@ -173,13 +176,13 @@ model ShipmentStatusDef {
 }
 
 model Shipment {
-  id              String         @id @default(cuid())
-  trackingNumber  String         @unique
-  poNumber        String?
-  statusId        String
-  status          ShipmentStatusDef @relation(fields: [statusId], references: [id])
+  id                String            @id @default(cuid())
+  trackingNumber    String            @unique
+  poNumber          String?
+  statusId          String
+  status            ShipmentStatusDef @relation(fields: [statusId], references: [id])
   serviceOfferingId String
-  serviceOffering   ServiceOffering @relation(fields: [serviceOfferingId], references: [id])
+  serviceOffering   ServiceOffering   @relation(fields: [serviceOfferingId], references: [id])
 
   customerId       String
   customer         Customer @relation(fields: [customerId], references: [id])
@@ -253,18 +256,18 @@ model ShipmentItem {
 }
 
 model TrackingHistory {
-  id          String         @id @default(cuid())
+  id          String            @id @default(cuid())
   shipmentId  String
-  shipment    Shipment       @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  shipment    Shipment          @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
   statusId    String
   status      ShipmentStatusDef @relation(fields: [statusId], references: [id])
   location    String
   description String?
   branchId    String?
-  branch      Branch?        @relation(fields: [branchId], references: [id])
+  branch      Branch?           @relation(fields: [branchId], references: [id])
   updatedById String?
-  updatedBy   User?          @relation("TrackingUpdatedBy", fields: [updatedById], references: [id])
-  timestamp   DateTime       @default(now())
+  updatedBy   User?             @relation("TrackingUpdatedBy", fields: [updatedById], references: [id])
+  timestamp   DateTime          @default(now())
   photos      TrackingPhoto[]
 
   @@index([shipmentId, timestamp])
@@ -303,7 +306,7 @@ model Vehicle {
   updatedAt     DateTime      @updatedAt
 
   shipments Shipment[]
-  drivers   Driver[] @relation("AssignedVehicle")
+  drivers   Driver[]   @relation("AssignedVehicle")
 
   @@index([status])
   @@index([branchId])
@@ -393,16 +396,16 @@ model ContentBlock {
 }
 
 model ServiceOffering {
-  id          String      @id @default(cuid())
-  slug        String      @unique
+  id          String   @id @default(cuid())
+  slug        String   @unique
   name        String
-  description String      @db.Text
+  description String   @db.Text
   icon        String?
-  isActive    Boolean     @default(true)
-  sortOrder   Int         @default(0)
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
   features    String[]
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   shipments Shipment[]
 
@@ -462,4 +465,60 @@ model ActivityLog {
   @@index([userId])
   @@index([entityType, entityId])
   @@map("activity_logs")
+}
+
+enum ChatStatus {
+  OPEN
+  CLOSED
+}
+
+enum ChatSender {
+  VISITOR
+  AGENT
+  BOT
+  SYSTEM
+}
+
+model ChatConversation {
+  id               String     @id @default(cuid())
+  /// SHA-256 of the visitor's cookie token; the raw token is never stored.
+  tokenHash        String     @unique
+  visitorName      String
+  visitorPhone     String
+  visitorEmail     String?
+  trackingNumber   String?
+  customerId       String?
+  customer         Customer?  @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  assignedToId     String?
+  assignedTo       User?      @relation("ChatAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  status           ChatStatus @default(OPEN)
+  unreadForAgent   Int        @default(0)
+  unreadForVisitor Int        @default(0)
+  /// The bot answers one tracking-number follow-up; later messages go to CS.
+  awaitingTracking Boolean    @default(false)
+  lastMessageAt    DateTime   @default(now())
+  createdAt        DateTime   @default(now())
+
+  messages ChatMessage[]
+
+  @@index([status, lastMessageAt])
+  @@index([visitorPhone])
+  @@map("chat_conversations")
+}
+
+model ChatMessage {
+  id             String           @id @default(cuid())
+  /// Global, increasing cursor used by polling clients (`?after=<seq>`).
+  seq            Int              @default(autoincrement())
+  conversationId String
+  conversation   ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         ChatSender
+  userId         String?
+  user           User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  body           String           @db.Text
+  createdAt      DateTime         @default(now())
+
+  @@unique([seq])
+  @@index([conversationId, seq])
+  @@map("chat_messages")
 }

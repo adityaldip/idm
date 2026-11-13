@@ -21,7 +21,10 @@ export type Permission =
   | "users:write"
   | "settings:read"
   | "settings:write"
-  | "export:generate";
+  | "export:generate"
+  | "chat:read"
+  | "chat:write"
+  | "chat:settings";
 
 const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   SUPER_ADMIN: [
@@ -46,6 +49,9 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "settings:read",
     "settings:write",
     "export:generate",
+    "chat:read",
+    "chat:write",
+    "chat:settings",
   ],
   ADMIN: [
     "dashboard:view",
@@ -65,6 +71,9 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "content:read",
     "content:write",
     "export:generate",
+    "chat:read",
+    "chat:write",
+    "chat:settings",
   ],
   OPERATOR: [
     "dashboard:view",
@@ -82,6 +91,8 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "customers:write",
     "content:read",
     "export:generate",
+    "chat:read",
+    "chat:write",
   ],
 };
 
@@ -97,6 +108,9 @@ const ROUTE_PERMISSIONS: Record<string, Permission> = {
   "/offerings": "content:read",
   "/partners": "content:read",
   "/inbox": "content:read",
+  // More specific prefix first: canAccessRoute takes the first match.
+  "/chat/settings": "chat:settings",
+  "/chat": "chat:read",
   "/users": "users:read",
   "/settings": "settings:read",
 };

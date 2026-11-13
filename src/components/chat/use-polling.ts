@@ -1,0 +1,57 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+
+/**
+ * Calls `poll` every `intervalMs` (or `hiddenIntervalMs` while the tab is hidden),
+ * waiting for each call to finish before scheduling the next one. Becoming visible
+ * again triggers an immediate poll.
+ */
+export function usePolling(
+  poll: () => Promise<unknown>,
+  { intervalMs, hiddenIntervalMs = 30_000, enabled = true }: {
+    intervalMs: number;
+    hiddenIntervalMs?: number;
+    enabled?: boolean;
+  },
+) {
+  const pollRef = useRef(poll);
+  useEffect(() => {
+    pollRef.current = poll;
+  }, [poll]);
+
+  useEffect(() => {
+    if (!enabled) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let stopped = false;
+    let inFlight = false;
+
+    const schedule = () => {
+      const delay = document.visibilityState === "visible" ? intervalMs : hiddenIntervalMs;
+      timer = setTimeout(run, delay);
+    };
+    const run = async () => {
+      if (inFlight) return;
+      inFlight = true;
+      clearTimeout(timer);
+      try {
+        await pollRef.current();
+      } catch {
+        // Network blips are expected; the next tick retries.
+      }
+      inFlight = false;
+      if (!stopped) schedule();
+    };
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void run();
+    };
+
+    void run();
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      stopped = true;
+      clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [enabled, intervalMs, hiddenIntervalMs]);
+}

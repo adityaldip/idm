@@ -47,6 +47,7 @@ export const config = {
     "/offerings/:path*",
     "/partners/:path*",
     "/inbox/:path*",
+    "/chat/:path*",
     "/users/:path*",
     "/settings/:path*",
     "/unauthorized",

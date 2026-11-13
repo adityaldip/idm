@@ -26,6 +26,7 @@ export const PROTECTED_PREFIXES = [
   "/partners",
   "/content",
   "/inbox",
+  "/chat",
   "/users",
   "/settings",
 ] as const;
@@ -46,6 +47,8 @@ export const DASHBOARD_NAV_ICONS = [
   "UserCog",
   "Settings",
   "Route",
+  "MessagesSquare",
+  "MessageCircleMore",
 ] as const;
 
 export type DashboardNavIcon = (typeof DASHBOARD_NAV_ICONS)[number];
@@ -86,6 +89,7 @@ export const DASHBOARD_NAV_GROUPS: readonly DashboardNavGroup[] = [
       { href: "/offerings", label: "Services", icon: "Briefcase" },
       { href: "/partners", label: "Partners", icon: "Handshake" },
       { href: "/content", label: "Content", icon: "FileText" },
+      { href: "/chat", label: "Live Chat", icon: "MessagesSquare" },
       { href: "/inbox", label: "Inbox", icon: "Inbox" },
     ],
   },
@@ -99,6 +103,7 @@ export const DASHBOARD_NAV_GROUPS: readonly DashboardNavGroup[] = [
         label: "Shipment Status",
         icon: "Route",
       },
+      { href: "/chat/settings", label: "Chat Settings", icon: "MessageCircleMore" },
     ],
   },
 ];
