@@ -69,9 +69,15 @@ export function ChatConsole({ canWrite }: { canWrite: boolean }) {
   const [items, setItems] = useState<ConversationItem[] | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
+  // A response for the previous filter can land after switching; ignore it.
+  const filterRef = useRef(filter);
+  useEffect(() => {
+    filterRef.current = filter;
+  }, [filter]);
+
   const pollList = useCallback(async () => {
     const data = await getJson<ConversationItem[]>(`/api/v1/chat/admin/conversations?status=${filter}`);
-    if (data) setItems(data);
+    if (data && filterRef.current === filter) setItems(data);
   }, [filter]);
 
   usePolling(pollList, { intervalMs: 10_000 });
