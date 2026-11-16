@@ -74,6 +74,7 @@ enum ActivityType {
   USER_LOGIN
   SETTINGS_CHANGED
   EXPORT_GENERATED
+  CHAT_UPDATED
 }
 
 model User {

@@ -13,7 +13,9 @@ export async function GET(request: Request, context: RouteContext) {
   const parsed = chatAfterSchema.safeParse(Object.fromEntries(new URL(request.url).searchParams));
   if (!parsed.success) return apiError("VALIDATION_ERROR", "Invalid query", 400);
 
-  return apiSuccess(await getAgentMessages(id, parsed.data.after));
+  const messages = await getAgentMessages(id, parsed.data.after);
+  if (!messages) return apiError("NOT_FOUND", "Conversation not found", 404);
+  return apiSuccess(messages);
 }
 
 export async function POST(request: Request, context: RouteContext) {

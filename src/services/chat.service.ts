@@ -1,4 +1,4 @@
-import type { ChatConversation, ChatSender, ChatStatus, Prisma } from "@prisma/client";
+import { Role, type ChatConversation, type ChatSender, type ChatStatus, type Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   BOT_ASK_TRACKING,
@@ -12,7 +12,8 @@ import {
   type ChatSettings,
 } from "@/lib/chat";
 import { generateChatToken, hashChatToken } from "@/lib/chat-token";
-import type { StartChatInput } from "@/lib/validators/chat";
+import { hasPermission } from "@/lib/permissions";
+import type { StartChatInput, UpdateConversationInput } from "@/lib/validators/chat";
 import { logActivity } from "./activity.service";
 import { getPublicTracking } from "./tracking.service";
 
@@ -105,18 +106,32 @@ export async function getVisitorMessages(conversation: ChatConversation, after: 
     select: messageSelect,
   });
 
-  let unread = conversation.unreadForVisitor;
-  if (markRead && unread > 0) {
-    await prisma.chatConversation.update({
-      where: { id: conversation.id },
+  if (markRead) {
+    await prisma.chatConversation.updateMany({
+      where: { id: conversation.id, unreadForVisitor: { gt: 0 } },
       data: { unreadForVisitor: 0 },
     });
-    unread = 0;
+    return { status: conversation.status, unread: 0, messages: messages.map(toView) };
   }
 
-  return { status: conversation.status, unread, messages: messages.map(toView) };
+  // Re-read after the message query so the count isn't older than the messages returned.
+  const fresh = await prisma.chatConversation.findUnique({
+    where: { id: conversation.id },
+    select: { status: true, unreadForVisitor: true },
+  });
+  return {
+    status: fresh?.status ?? conversation.status,
+    unread: fresh?.unreadForVisitor ?? 0,
+    messages: messages.map(toView),
+  };
 }
 
+/**
+ * Pollers read with `seq > cursor`, so within one conversation a message must never
+ * become visible after one with a higher seq. Updating the conversation row first takes
+ * its row lock; a concurrent insert into the same conversation waits for this commit
+ * before drawing its seq, so seq order matches commit order per conversation.
+ */
 async function addMessage(
   conversationId: string,
   sender: ChatSender,
@@ -124,14 +139,14 @@ async function addMessage(
   counters: Prisma.ChatConversationUpdateInput = {},
   userId?: string,
 ) {
-  const [message] = await prisma.$transaction([
-    prisma.chatMessage.create({
-      data: { conversationId, sender, body, userId },
-      select: messageSelect,
-    }),
+  const [, message] = await prisma.$transaction([
     prisma.chatConversation.update({
       where: { id: conversationId },
       data: { lastMessageAt: new Date(), ...counters },
+    }),
+    prisma.chatMessage.create({
+      data: { conversationId, sender, body, userId },
+      select: messageSelect,
     }),
   ]);
   return message;
@@ -253,25 +268,41 @@ export async function getConversationDetail(id: string) {
       status: true,
       createdAt: true,
       assignedTo: { select: { id: true, name: true } },
+      customer: { select: { id: true, code: true, name: true } },
     },
   });
   if (!conversation) return null;
 
-  const previous = await prisma.chatConversation.findMany({
-    where: { visitorPhone: conversation.visitorPhone, id: { not: id } },
-    orderBy: { createdAt: "desc" },
-    take: 10,
-    select: { id: true, createdAt: true, status: true },
-  });
+  // Last 9 digits match "0812…", "62812…" and "+62 812…" stored without separators.
+  const phoneTail = conversation.visitorPhone.slice(-9);
+  const [previous, customerMatches] = await Promise.all([
+    prisma.chatConversation.findMany({
+      where: { visitorPhone: conversation.visitorPhone, id: { not: id } },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+      select: { id: true, createdAt: true, status: true },
+    }),
+    conversation.customer || phoneTail.length < 9
+      ? []
+      : prisma.customer.findMany({
+          where: { phone: { contains: phoneTail }, isActive: true },
+          take: 3,
+          select: { id: true, code: true, name: true },
+        }),
+  ]);
 
   return {
     ...conversation,
     createdAt: conversation.createdAt.toISOString(),
     previous: previous.map((p) => ({ ...p, createdAt: p.createdAt.toISOString() })),
+    customerMatches,
   };
 }
 
+/** `null` when the conversation doesn't exist. */
 export async function getAgentMessages(id: string, after: number) {
+  const exists = await prisma.chatConversation.findUnique({ where: { id }, select: { id: true } });
+  if (!exists) return null;
   const messages = await prisma.chatMessage.findMany({
     where: { conversationId: id, seq: { gt: after } },
     orderBy: { seq: "asc" },
@@ -308,27 +339,93 @@ export async function sendAgentMessage(id: string, userId: string, body: string)
   return toView(message);
 }
 
-export async function updateConversation(
-  id: string,
-  userId: string,
-  input: { status?: ChatStatus; assignToMe?: boolean },
-) {
-  const conversation = await prisma.chatConversation.findUnique({ where: { id } });
+const CHAT_AGENT_ROLES = Object.values(Role).filter((role) => hasPermission(role, "chat:write"));
+
+/** Active users who can reply to chats, for the assign dropdown. */
+export async function listChatAgents() {
+  return prisma.user.findMany({
+    where: { isActive: true, role: { in: CHAT_AGENT_ROLES } },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true },
+  });
+}
+
+export class ChatUpdateError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ChatUpdateError";
+  }
+}
+
+/** Close/reopen, assign, link a Customer. Each change is written to the activity log. */
+export async function updateConversation(id: string, userId: string, input: UpdateConversationInput) {
+  const conversation = await prisma.chatConversation.findUnique({
+    where: { id },
+    include: {
+      assignedTo: { select: { name: true } },
+      customer: { select: { code: true, name: true } },
+    },
+  });
   if (!conversation) return null;
 
-  if (input.assignToMe) {
-    await prisma.chatConversation.update({ where: { id }, data: { assignedToId: userId } });
+  const actor = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } });
+  const who = actor?.name ?? "CS";
+  const data: Prisma.ChatConversationUpdateInput = {};
+  const changes: string[] = [];
+
+  if (input.assignedToId !== undefined && input.assignedToId !== conversation.assignedToId) {
+    if (input.assignedToId === null) {
+      data.assignedTo = { disconnect: true };
+      changes.push(`unassigned from ${conversation.assignedTo?.name ?? "-"}`);
+    } else {
+      const agent = await prisma.user.findFirst({
+        where: { id: input.assignedToId, isActive: true, role: { in: CHAT_AGENT_ROLES } },
+        select: { id: true, name: true },
+      });
+      if (!agent) throw new ChatUpdateError("CS tidak ditemukan atau tidak punya akses chat");
+      data.assignedTo = { connect: { id: agent.id } };
+      changes.push(`assigned to ${agent.name}`);
+    }
+  }
+
+  if (input.customerId !== undefined && input.customerId !== conversation.customerId) {
+    if (input.customerId === null) {
+      data.customer = { disconnect: true };
+      changes.push(`unlinked from customer ${conversation.customer?.code ?? "-"}`);
+    } else {
+      const customer = await prisma.customer.findUnique({
+        where: { id: input.customerId },
+        select: { id: true, code: true, name: true },
+      });
+      if (!customer) throw new ChatUpdateError("Customer tidak ditemukan");
+      data.customer = { connect: { id: customer.id } };
+      changes.push(`linked to customer ${customer.code} (${customer.name})`);
+    }
+  }
+
+  if (Object.keys(data).length > 0) {
+    await prisma.chatConversation.update({ where: { id }, data });
   }
 
   if (input.status && input.status !== conversation.status) {
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } });
-    const who = user?.name ?? "CS";
     await addMessage(
       id,
       "SYSTEM",
       input.status === "CLOSED" ? `Chat ditutup oleh ${who}` : `Chat dibuka kembali oleh ${who}`,
       { status: input.status, unreadForAgent: 0 },
     );
+    changes.push(input.status === "CLOSED" ? "closed" : "reopened");
+  }
+
+  if (changes.length > 0) {
+    await logActivity({
+      type: "CHAT_UPDATED",
+      message: `Chat with ${conversation.visitorName}: ${changes.join(", ")}`,
+      userId,
+      entityType: "ChatConversation",
+      entityId: id,
+      metadata: { changes },
+    });
   }
 
   return getConversationDetail(id);

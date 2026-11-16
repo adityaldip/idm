@@ -4,7 +4,7 @@
 --   DBURL=$(grep -h '^DATABASE_URL' .env | cut -d= -f2- | tr -d '"' | sed 's/?.*//')
 --   psql "$DBURL" -v ON_ERROR_STOP=1 -f scripts/migrations/2026-11-13-live-chat.sql
 --
--- Safe to re-run: types, tables, indexes and constraints are created only if missing.
+-- Safe to re-run: types, enum values, tables, indexes and constraints are created only if missing.
 
 BEGIN;
 
@@ -81,3 +81,7 @@ BEGIN
 END $$;
 
 COMMIT;
+
+-- Activity log entries for chat close/reopen, assign and customer links.
+-- Kept outside the transaction above; IF NOT EXISTS makes it safe to re-run.
+ALTER TYPE "ActivityType" ADD VALUE IF NOT EXISTS 'CHAT_UPDATED';

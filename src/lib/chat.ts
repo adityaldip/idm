@@ -161,6 +161,8 @@ export function welcomeMessage(settings: ChatSettings, visitorName: string, now:
 // --- Tracking-number bot -------------------------------------------------------
 
 const TRACKING_NUMBER_PATTERN = /\bIDM\d{6,}\b/i;
+/** A field that holds only a tracking number. */
+export const TRACKING_NUMBER_FORMAT = /^IDM\d{6,20}$/i;
 
 export function extractTrackingNumber(text: string): string | null {
   return text.match(TRACKING_NUMBER_PATTERN)?.[0].toUpperCase() ?? null;

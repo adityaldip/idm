@@ -7,7 +7,8 @@ import { getChatSettings, getVisitorMessages, startConversation } from "@/servic
 export async function POST(request: Request) {
   const ip = getClientIp(request);
   const limit = rateLimit(`chat-start:${ip}`, 3, 10 * 60_000);
-  if (!limit.allowed) {
+  // Site-wide cap as a backstop in case per-IP limiting is bypassed.
+  if (!limit.allowed || !rateLimit("chat-start:all", 60, 10 * 60_000).allowed) {
     return apiError("RATE_LIMITED", "Terlalu banyak percobaan. Coba lagi beberapa menit lagi.", 429);
   }
 

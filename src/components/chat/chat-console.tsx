@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, Bot, History, Loader2, Lock, LockOpen, MessageCircle, Send } from "lucide-react";
+import { ArrowLeft, Bot, History, Link2, Loader2, Lock, LockOpen, MessageCircle, Send, Unlink } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { whatsappNumber } from "@/lib/chat";
@@ -32,8 +32,14 @@ type ConversationDetail = {
   status: "OPEN" | "CLOSED";
   createdAt: string;
   assignedTo: { id: string; name: string } | null;
+  customer: CustomerRef | null;
+  customerMatches: CustomerRef[];
   previous: { id: string; createdAt: string; status: "OPEN" | "CLOSED" }[];
 };
+
+type CustomerRef = { id: string; code: string; name: string };
+export type ChatAgent = { id: string; name: string };
+type ConversationPatch = { status?: "OPEN" | "CLOSED"; assignedToId?: string | null; customerId?: string | null };
 
 async function getJson<T>(url: string, init?: RequestInit): Promise<T | null> {
   const res = await fetch(url, {
@@ -64,7 +70,15 @@ function initials(name: string) {
     .join("");
 }
 
-export function ChatConsole({ canWrite }: { canWrite: boolean }) {
+export function ChatConsole({
+  canWrite,
+  canSearchCustomers,
+  agents,
+}: {
+  canWrite: boolean;
+  canSearchCustomers: boolean;
+  agents: ChatAgent[];
+}) {
   const [filter, setFilter] = useState<"OPEN" | "CLOSED">("OPEN");
   const [items, setItems] = useState<ConversationItem[] | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -169,6 +183,8 @@ export function ChatConsole({ canWrite }: { canWrite: boolean }) {
             key={selectedId}
             id={selectedId}
             canWrite={canWrite}
+            canSearchCustomers={canSearchCustomers}
+            agents={agents}
             onBack={() => setSelectedId(null)}
             onSelect={setSelectedId}
             onChanged={pollList}
@@ -187,12 +203,16 @@ export function ChatConsole({ canWrite }: { canWrite: boolean }) {
 function ConversationPane({
   id,
   canWrite,
+  canSearchCustomers,
+  agents,
   onBack,
   onSelect,
   onChanged,
 }: {
   id: string;
   canWrite: boolean;
+  canSearchCustomers: boolean;
+  agents: ChatAgent[];
   onBack: () => void;
   onSelect: (id: string) => void;
   onChanged: () => Promise<void>;
@@ -249,14 +269,14 @@ function ConversationPane({
     void onChanged();
   }
 
-  async function setStatus(status: "OPEN" | "CLOSED") {
+  async function update(patch: ConversationPatch) {
     const updated = await getJson<ConversationDetail>(`/api/v1/chat/admin/conversations/${id}`, {
       method: "PATCH",
-      body: JSON.stringify({ status }),
+      body: JSON.stringify(patch),
     });
     if (!updated) return;
     setDetail(updated);
-    await pollMessages();
+    if (patch.status) await pollMessages();
     void onChanged();
   }
 
@@ -282,7 +302,7 @@ function ConversationPane({
             {detail.trackingNumber && (
               <span>
                 · Resi{" "}
-                <Link href={`/tracking/${detail.trackingNumber}`} target="_blank" className="text-primary hover:underline">
+                <Link href={`/tracking/${encodeURIComponent(detail.trackingNumber)}`} target="_blank" className="text-primary hover:underline">
                   {detail.trackingNumber}
                 </Link>
               </span>
@@ -310,15 +330,43 @@ function ConversationPane({
         </Button>
         {canWrite &&
           (detail.status === "OPEN" ? (
-            <Button variant="outline" size="sm" onClick={() => setStatus("CLOSED")}>
+            <Button variant="outline" size="sm" onClick={() => update({ status: "CLOSED" })}>
               <Lock /> Tutup chat
             </Button>
           ) : (
-            <Button variant="outline" size="sm" onClick={() => setStatus("OPEN")}>
+            <Button variant="outline" size="sm" onClick={() => update({ status: "OPEN" })}>
               <LockOpen /> Buka lagi
             </Button>
           ))}
       </header>
+
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-border px-4 py-2 text-xs">
+        <label className="flex items-center gap-2">
+          <span className="text-muted-foreground">CS</span>
+          {canWrite ? (
+            <select
+              value={detail.assignedTo?.id ?? ""}
+              onChange={(e) => void update({ assignedToId: e.target.value || null })}
+              className="h-7 rounded-lg border border-input bg-background px-2 text-xs"
+            >
+              <option value="">Belum di-assign</option>
+              {agents.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span>{detail.assignedTo?.name ?? "Belum di-assign"}</span>
+          )}
+        </label>
+        <CustomerLink
+          detail={detail}
+          canWrite={canWrite}
+          canSearch={canSearchCustomers}
+          onLink={(customerId) => update({ customerId })}
+        />
+      </div>
 
       {showHistory && (
         <div className="flex flex-wrap gap-2 border-b border-border bg-muted/40 px-4 py-2 text-xs">
@@ -397,5 +445,101 @@ function ConversationPane({
         </p>
       )}
     </>
+  );
+}
+
+function CustomerLink({
+  detail,
+  canWrite,
+  canSearch,
+  onLink,
+}: {
+  detail: ConversationDetail;
+  canWrite: boolean;
+  canSearch: boolean;
+  onLink: (customerId: string | null) => Promise<void>;
+}) {
+  const [searching, setSearching] = useState(false);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<CustomerRef[]>([]);
+
+  useEffect(() => {
+    const q = query.trim();
+    if (!searching || q.length < 2) return;
+    const timer = setTimeout(async () => {
+      const data = await getJson<{ items: CustomerRef[] }>(
+        `/api/v1/customers?${new URLSearchParams({ search: q, limit: "5" })}`,
+      );
+      setResults(data?.items ?? []);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query, searching]);
+
+  if (detail.customer) {
+    return (
+      <span className="flex items-center gap-2">
+        <span className="text-muted-foreground">Customer</span>
+        <Link
+          href={`/customers?${new URLSearchParams({ search: detail.customer.code })}`}
+          className="text-primary hover:underline"
+        >
+          {detail.customer.code} · {detail.customer.name}
+        </Link>
+        {canWrite && (
+          <button
+            type="button"
+            onClick={() => void onLink(null)}
+            className="flex items-center gap-1 text-muted-foreground hover:text-destructive"
+          >
+            <Unlink className="size-3" /> Lepas
+          </button>
+        )}
+      </span>
+    );
+  }
+
+  if (!canWrite) {
+    return <span className="text-muted-foreground">Belum ditautkan ke Customer</span>;
+  }
+
+  const options = query.trim().length >= 2 ? results : detail.customerMatches;
+
+  return (
+    <span className="flex flex-wrap items-center gap-2">
+      <span className="text-muted-foreground">Customer</span>
+      {!searching && detail.customerMatches.length > 0 && (
+        <span className="text-muted-foreground">nomor HP cocok:</span>
+      )}
+      {(searching || detail.customerMatches.length > 0) &&
+        options.map((c) => (
+          <button
+            key={c.id}
+            type="button"
+            onClick={async () => {
+              await onLink(c.id);
+              setSearching(false);
+              setQuery("");
+            }}
+            className="flex items-center gap-1 rounded-full border border-border px-2 py-0.5 hover:bg-muted"
+          >
+            <Link2 className="size-3" /> {c.code} · {c.name}
+          </button>
+        ))}
+      {canSearch &&
+        (searching ? (
+          <input
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => e.key === "Escape" && setSearching(false)}
+            placeholder="Cari nama / kode / HP"
+            className="h-7 w-44 rounded-lg border border-input bg-background px-2 text-xs"
+          />
+        ) : (
+          <button type="button" onClick={() => setSearching(true)} className="text-primary hover:underline">
+            Cari customer
+          </button>
+        ))}
+    </span>
   );
 }

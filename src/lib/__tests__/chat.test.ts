@@ -1,3 +1,4 @@
+import { startChatSchema } from "@/lib/validators/chat";
 import { describe, it, expect } from "vitest";
 import {
   CHAT_SETTING_KEYS,
@@ -147,5 +148,17 @@ describe("tracking bot", () => {
     });
     expect(reply).toContain("Diterima: 13 November 2026");
     expect(reply).not.toContain("Estimasi");
+  });
+});
+
+describe("startChatSchema trackingNumber", () => {
+  const base = { name: "Budi", phone: "081234567890" };
+  it("accepts an IDM number or empty", () => {
+    expect(startChatSchema.safeParse({ ...base, trackingNumber: "idm2026000017" }).success).toBe(true);
+    expect(startChatSchema.safeParse({ ...base, trackingNumber: "" }).success).toBe(true);
+  });
+  it("rejects anything else", () => {
+    expect(startChatSchema.safeParse({ ...base, trackingNumber: "../../users" }).success).toBe(false);
+    expect(startChatSchema.safeParse({ ...base, trackingNumber: "IDM12" }).success).toBe(false);
   });
 });

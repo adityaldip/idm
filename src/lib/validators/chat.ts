@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CHAT_MESSAGE_MAX_LENGTH } from "@/lib/chat";
+import { CHAT_MESSAGE_MAX_LENGTH, TRACKING_NUMBER_FORMAT } from "@/lib/chat";
 
 export const startChatSchema = z.object({
   name: z.string().trim().min(2, "Nama minimal 2 karakter").max(80),
@@ -8,7 +8,12 @@ export const startChatSchema = z.object({
     .trim()
     .regex(/^[0-9+\-\s().]{8,20}$/, "Nomor HP tidak valid"),
   email: z.string().trim().email("Email tidak valid").optional().or(z.literal("")),
-  trackingNumber: z.string().trim().max(40).optional().or(z.literal("")),
+  trackingNumber: z
+    .string()
+    .trim()
+    .regex(TRACKING_NUMBER_FORMAT, "Format resi tidak valid (contoh: IDM2026000017)")
+    .optional()
+    .or(z.literal("")),
   /** Honeypot: hidden field that real visitors leave empty. */
   website: z.string().max(0).optional(),
 });
@@ -32,10 +37,20 @@ export const chatAfterSchema = z.object({
   read: z.enum(["0", "1"]).default("1"),
 });
 
-export const updateConversationSchema = z.object({
-  status: z.enum(["OPEN", "CLOSED"]).optional(),
-  assignToMe: z.boolean().optional(),
+export const chatListSchema = z.object({
+  status: z.enum(["OPEN", "CLOSED"]).default("OPEN"),
 });
+
+/** `null` unassigns / unlinks; omitted fields are left unchanged. */
+export const updateConversationSchema = z
+  .object({
+    status: z.enum(["OPEN", "CLOSED"]).optional(),
+    assignedToId: z.string().min(1).nullable().optional(),
+    customerId: z.string().min(1).nullable().optional(),
+  })
+  .refine((v) => Object.values(v).some((x) => x !== undefined), { message: "Tidak ada perubahan" });
+
+export type UpdateConversationInput = z.infer<typeof updateConversationSchema>;
 
 const timeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Format jam HH:MM");
 

@@ -1,7 +1,7 @@
 import { updateConversationSchema } from "@/lib/validators/chat";
 import { requirePermission } from "@/lib/api/auth";
 import { apiError, apiSuccess } from "@/lib/api/response";
-import { getConversationDetail, updateConversation } from "@/services/chat.service";
+import { ChatUpdateError, getConversationDetail, updateConversation } from "@/services/chat.service";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -23,10 +23,20 @@ export async function PATCH(request: Request, context: RouteContext) {
   const body = await request.json().catch(() => null);
   const parsed = updateConversationSchema.safeParse(body);
   if (!parsed.success) {
-    return apiError("VALIDATION_ERROR", "Invalid request body", 400, parsed.error.flatten());
+    return apiError(
+      "VALIDATION_ERROR",
+      parsed.error.issues[0]?.message ?? "Invalid request body",
+      400,
+      parsed.error.flatten(),
+    );
   }
 
-  const detail = await updateConversation(id, auth.actor.id, parsed.data);
-  if (!detail) return apiError("NOT_FOUND", "Conversation not found", 404);
-  return apiSuccess(detail);
+  try {
+    const detail = await updateConversation(id, auth.actor.id, parsed.data);
+    if (!detail) return apiError("NOT_FOUND", "Conversation not found", 404);
+    return apiSuccess(detail);
+  } catch (error) {
+    if (error instanceof ChatUpdateError) return apiError("VALIDATION_ERROR", error.message, 400);
+    throw error;
+  }
 }
